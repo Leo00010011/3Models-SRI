@@ -1,0 +1,77 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build_tester",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "build",
+                "${workspaceFolder}/tester/tester.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish_tester",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "publish",
+                "${workspaceFolder}/tester/tester.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch_tester",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/tester/tester.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build_UI",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "build",
+                "${workspaceFolder}/UI/UI.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish_UI",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "publish",
+                "${workspaceFolder}/UI/UI.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch_UI",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/UI/UI.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
