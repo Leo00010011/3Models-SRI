@@ -16,12 +16,12 @@ public interface ISearchResult : IEnumerable<SearchItem>
     int Count { get; }
 }
 
-public interface ISRIVector<T, K> : IEnumerable<T>
+public interface ISRIVector<K, T> : IEnumerable<T>
 {
     T this[K index] { get; }
 }
 
-public interface ISRIModel
+public interface ISRIModel<T, D>
 {
     /// <summary>
     /// Este método es el encargado de, a partir del peso de los documentos, 
@@ -34,21 +34,21 @@ public interface ISRIModel
     /// Este método es el encargado de dar valores a la matriz de vectores de documentos
     /// </summary>
     /// <returns>retorna un vector de vectores de documentos</returns>
-    ISRIVector<int, ISRIVector<int, double>> GetWeightMatrix();
+    ISRIVector<D, ISRIVector<T, double>> GetWeightMatrix();
 
     /// <summary>
     /// Este método se utiliza para selecionar un vector de término específico
     /// </summary>
     /// <param name="index">es el identificador de dicho término en el modelo</param>
     /// <returns>retorna un vector término</returns>
-    ISRIVector<int, double> GetTermVector(int index);
+    ISRIVector<D, double> GetTermVector(T index);
 
     /// <summary>
     /// Este método se utiliza para selecionar un vector de documento específico
     /// </summary>
     /// <param name="index">es el identificador de dicho documento en el modelo</param>
     /// <returns>retorna un vector documento</returns>
-    ISRIVector<int, double> GetDocVector(int index);
+    ISRIVector<T, double> GetDocVector(D index);
 
     /// <summary>
     /// Este método se utiliza para comparar cuán semejantes son dos documentos dentro
@@ -57,7 +57,7 @@ public interface ISRIModel
     /// <param name="doc1">documento a comparar</param>
     /// <param name="doc2">documento a comparar</param>
     /// <returns>retorna un valor entre 0 y 1 como indicador de semejanza</returns>
-    double SimilarityRate(ISRIVector<int, double> doc1, ISRIVector<int, double> doc2);
+    double SimilarityRate(ISRIVector<T, double> doc1, ISRIVector<T, double> doc2);
 
     /// <summary>
     /// Dado una serie de documentos recuperados, estos se ordenan siguiendo el criterio

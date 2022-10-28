@@ -3,7 +3,7 @@ using SRI.Interface;
 
 namespace SRI;
 
-public class SRIVector<T, K> : ISRIVector<T, K>
+public class SRIVector<K, T> : ISRIVector<K, T>
 {
     public T this[K index] => throw new NotImplementedException();
 
