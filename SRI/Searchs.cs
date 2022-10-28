@@ -27,11 +27,19 @@ public class SearchItem
         this.Score = score;
     }
 
-
+    /// <summary>
+    /// Título del documento recuperado
+    /// </summary>
     public string Title { get; private set; }
 
+    /// <summary>
+    /// Pequeña representación del documento recuperado
+    /// </summary>
     public string Snippet { get; private set; }
 
+    /// <summary>
+    /// Peso del documento según el modelo empleado
+    /// </summary>
     public double Score { get; private set; }
 }
 
