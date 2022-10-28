@@ -47,10 +47,6 @@ public interface IProcesedTerm : IEnumerable<(string, int)>
         get;
     }
 
-    string Term 
-    {
-        get;
-    }
 }
 
 public interface IProcesedCorpus
