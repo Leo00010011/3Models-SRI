@@ -3,6 +3,11 @@ using SRI.Interface;
 
 namespace SRI;
 
+/// <summary>
+/// Representa un vector en el modelo de SRI
+/// </summary>
+/// <typeparam name="K">tipo de llave de dicho vector</typeparam>
+/// <typeparam name="T">tipo de valor que le corresponde a una llave</typeparam>
 public class SRIVector<K, T> : ISRIVector<K, T>
 {
     public T this[K index] => throw new NotImplementedException();
@@ -18,6 +23,9 @@ public class SRIVector<K, T> : ISRIVector<K, T>
     }
 }
 
+/// <summary>
+/// Representa un documento recuperado a partir de una consulta
+/// </summary>
 public class SearchItem
 {
     public SearchItem(string title, string snippet, double score)
@@ -43,6 +51,9 @@ public class SearchItem
     public double Score { get; private set; }
 }
 
+/// <summary>
+/// Representa el resultado de una consulta en un modelo de SRI
+/// </summary>
 public class SearchResult : ISearchResult, IEnumerable<SearchItem>
 {
     SearchItem ISearchResult.this[int index] => items[index];

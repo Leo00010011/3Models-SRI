@@ -1,6 +1,10 @@
 using DP.Interface;
 
 namespace SRI.Interface;
+
+/// <summary>
+/// Representa la interfaz del resultado de una consulta en un modelo de SRI
+/// </summary>
 public interface ISearchResult : IEnumerable<SearchItem>
 {
     SearchItem this[int index] { get; }
@@ -16,11 +20,21 @@ public interface ISearchResult : IEnumerable<SearchItem>
     int Count { get; }
 }
 
+/// <summary>
+/// Representa la interfaz de un vector en el modelo de SRI
+/// </summary>
+/// <typeparam name="K">tipo de llave de dicho vector</typeparam>
+/// <typeparam name="T">tipo de valor que le corresponde a una llave</typeparam>
 public interface ISRIVector<K, T> : IEnumerable<T>
 {
     T this[K index] { get; }
 }
 
+/// <summary>
+/// Representa la interfaz de un modelo genérico en un SRI
+/// </summary>
+/// <typeparam name="T">tipo de término en el modelo</typeparam>
+/// <typeparam name="D">tipo de documento en el modelo</typeparam>
 public interface ISRIModel<T, D>
 {
     /// <summary>
