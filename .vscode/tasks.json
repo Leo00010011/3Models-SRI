@@ -72,6 +72,6 @@
                 "${workspaceFolder}/UI/UI.csproj"
             ],
             "problemMatcher": "$msCompile"
-        }
+        },
     ]
 }
