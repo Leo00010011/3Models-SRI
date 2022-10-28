@@ -2,7 +2,8 @@
 using System;
 using System.Collections.Generic;
 
-public interface IDocument
+
+public interface IDocument : IEnumerable<char>
 {
     string Id
     {
@@ -13,29 +14,22 @@ public interface IDocument
     {
         get;
     }
-
-    IEnumerable<char> CharDoc
-    {
-        get;
-    }
 }
 
-public interface ICorpus
+public interface ICorpus : IEnumerable<IDocument>
 {
-    IEnumerable<IDocument> documents
-    {
-        get;
-    }
+
 }
 
-public interface IProcesedDocument
+
+public interface IProcesedDocument : IEnumerable<(string,int)>
 {
     int this[string index]
     {
         get;
     }
 
-    IEnumerable<(string, int)> TermFreqInDoc
+    IDocument RawDoc
     {
         get;
     }
@@ -49,6 +43,11 @@ public interface IProcesedTerm
     }
 
     IEnumerable<(string, int)> DocWithTermFreq
+    {
+        get;
+    }
+
+    string Term 
     {
         get;
     }
@@ -80,6 +79,5 @@ public interface IProcesedCorpus
     int InvertedFrequency(string term);
 
     bool UpdateCorpus(ICorpus corpus);
-
 
 }
