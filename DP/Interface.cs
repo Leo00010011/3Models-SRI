@@ -16,38 +16,25 @@ public interface IDocument : IEnumerable<char>
     }
 }
 
-public interface ICorpus : IEnumerable<IDocument>
+public interface IResult<TValue,KKey,MPiece> : IEnumerable<(string,int)>
 {
 
+    int Length
+    {
+        get;
+    }
+
+    MPiece this[KKey index]
+    {
+        get;
+    }
+
+    TValue Result
+    {
+        get;
+    }
 }
 
-
-public interface IProcesedDocument : IEnumerable<(string,int)>
-{
-    int this[string index]
-    {
-        get;
-    }
-
-    IDocument RawDoc
-    {
-        get;
-    }
-}
-
-public interface IProcesedTerm : IEnumerable<(string, int)>
-{
-    int this[string index]
-    {
-        get;
-    }
-
-    string Term 
-    {
-        get;
-    }
-
-}
 
 public interface IProcesedCorpus
 {
@@ -61,9 +48,9 @@ public interface IProcesedCorpus
         get;
     }
 
-    IProcesedDocument GetProcesedDocument(string id);
+    IResult<IDocument,string,int> GetProcesedDocument(string id);
 
-    IProcesedTerm GetProcesedTerm(string term);
+    IResult<string,string,int> GetProcesedTerm(string term);
 
     int Frequency(string DocId, string term);
 
@@ -74,6 +61,6 @@ public interface IProcesedCorpus
     /// <returns></returns>
     int InvertedFrequency(string term);
 
-    bool UpdateCorpus(ICorpus corpus);
+    bool UpdateCorpus(IEnumerable<IDocument> corpus);
 
 }
