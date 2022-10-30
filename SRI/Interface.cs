@@ -9,7 +9,7 @@ public interface ISearchResult : IEnumerable<SearchItem>
 {
     SearchItem this[int index] { get; }
 
-    /// <summary>a
+    /// <summary>
     /// Es la palabra más cercana a la consulta realizada
     /// </summary>
     string Suggestion { get; }
