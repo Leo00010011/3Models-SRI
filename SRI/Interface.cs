@@ -45,8 +45,9 @@ public interface ISRIModel<T, D>
     /// Este método es el encargado de, a partir del peso de los documentos, 
     /// devolver los documentos recuperados por esa consulta
     /// </summary>
+    /// <param name="query">consulta realizada al corpus del modelo</param>
     /// <returns>retorna un array de SearchItem que representa los documentos recuperados</returns>
-    SearchItem[] GetSearchItems();
+    SearchItem[] GetSearchItems(IProcesedDocument query);
 
     /// <summary>
     /// Este método es el encargado de dar valores a la matriz de vectores de documentos

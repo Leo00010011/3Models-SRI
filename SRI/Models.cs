@@ -2,7 +2,7 @@ using DP.Interface;
 using SRI.Interface;
 
 namespace SRI;
-public class VSM : ISRIModel<string , string>
+public class VSM : ISRIModel<string, string>
 {
     public bool UpdateRequired { get; private set; }
 
@@ -16,7 +16,7 @@ public class VSM : ISRIModel<string , string>
         weightMatrix = null;
     }
 
-    public SearchItem[] GetSearchItems()
+    public SearchItem[] GetSearchItems(IProcesedDocument query)
     {
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
@@ -25,7 +25,7 @@ public class VSM : ISRIModel<string , string>
         SearchItem[] result = new SearchItem[weightMatrix.Count];
         foreach (var doc in weightMatrix)
         {
-            result[count++] = new SearchItem("asd", "asd", "asd", doc.Sum());
+            result[count++] = new SearchItem("asd", "asd", "asd", query.TermFreqInDoc.Sum(x => (doc.GetKeys().Contains(x.Item1)) ? doc[x.Item1] : 0));
         }
 
         return result;
