@@ -31,6 +31,10 @@ public interface ISRIVector<K, T> : IEnumerable<T>
 
     int Count { get; }
 
+    /// <summary>
+    /// Método empleado para iterar por los valores K del vector SRI
+    /// </summary>
+    /// <returns>un enumerable de las llaves</returns>
     IEnumerable<K> GetKeys();
 }
 
