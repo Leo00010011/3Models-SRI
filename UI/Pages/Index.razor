@@ -54,18 +54,19 @@
 
 @code {
     private string query = "";
-
-    private string corpus_address;
-    private ISearchResult result;
-    private IProcesedCorpus corpus;
-    private IDocument procesed_query; 
+    private string corpus_path = "";
+    private ISearchResult? result;
+    private IProcesedCorpus? corpus;
+    private IResult<string,string,int>? processed_query; 
     private bool vectorial = true;
     private bool boolean;
     private bool other;
 
 
-    @* private SearchResult result = new SearchResult(); *@
-
+    /// <summary>
+    /// Este metodo settea en true el tipo de modelo SRI seleccionado en los radio buttons
+    /// </summary>
+    /// <param name="e"></param>
     private void SRISelector(ChangeEventArgs e) {
 
         if (e.Value is not null)
@@ -93,28 +94,59 @@
             }
         }
     }
-    private void GetCorpusFromAddress()
+
+    /// <summary>
+    /// Este metodo rehace la recuperacion de documentos a partir de la sugerencia de la busqueda anterior
+    /// </summary>
+    private void RunSuggestion() 
     {
-       @* corpus = new Corpus(corpus_address); *@
+        if(result !=null && !string.IsNullOrEmpty(result.Suggestion))
+        {   
+            query = result.Suggestion;
+            RunQuery();
+        }
+    }
+
+    /// <summary>
+    /// Este metodo obtiene el corpus del SRI a partir de los archivos en el directorio y subdirectorios especificados en una direccion determinada
+    /// </summary>
+    private void GetCorpusFromPath()
+    {
+       @* corpus = new Corpus(corpus_path); *@
 
     }
 
-    private void RunQuery() {
-        @* procesed_query = new ProcesedDocument(query); *@
-        ISRIModel<string,string> model;
-        @* if(corpus !=null)
+    /// <summary>
+    /// Metodo para obtener los documentos relevantes a una consulta(query) segun el modelo de SRI correspondiente
+    /// </summary>
+    private void RunQuery() 
+    {
+        if(!string.IsNullOrEmpty(query))
         {
-            if(vectorial)
-                ISRIModel<string,string> model = VSI(corpus);
-            if(boolean) 
-            if(other) 
+            @* processed_query = new ProcesedDocument(query); *@
 
-        } *@
-        @* result = new SearchResult(model.GetSearchItems(procesed_query)); *@
+            if(corpus !=null && processed_query != null)
+            {
+                if(vectorial)
+                {
+                    ISRIModel<string,string> model = new VSM(corpus); 
+                    result = new SearchResult(model.GetSearchItems(processed_query)); 
+                }
+                @* if(boolean) 
+                {
+
+                add code for boolean research model
+                }
+                if(other) 
+                {
+
+                add code for other research model *@
+                }
+
+            } 
+        }
 
     }
-     private void RunSuggestion() {
-        query = result.Suggestion;
-        RunQuery();
-    }
+    
+
 }
