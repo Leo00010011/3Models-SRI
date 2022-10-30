@@ -21,12 +21,12 @@ public class VSM : ISRIModel<string, string>
         if(!CheckCorpus() || corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
-        int count = 0;
+        // int count = 0;
         SearchItem[] result = new SearchItem[weightMatrix.Count];
-        foreach (IDocument doc in corpus.GetAllDocument())
-        {
-            result[count++] = new SearchItem(doc.Id, doc.Id, (string)((IEnumerable<char>)doc), query.Sum(x => (weightMatrix.ContainsKey(x.Item1)) ? weightMatrix[doc.Id][x.Item1] : 0));
-        }
+        // foreach (IDocument doc in corpus.GetAllDocument())
+        // {
+        //     result[count++] = new SearchItem(doc.Id, doc.Id, (string)((IEnumerable<char>)doc), query.Sum(x => (weightMatrix.ContainsKey(x.Item1)) ? weightMatrix[doc.Id][x.Item1] : 0));
+        // }
 
         return result;
     }
@@ -37,11 +37,13 @@ public class VSM : ISRIModel<string, string>
         if(!UpdateRequired && !(weightMatrix is null)) return weightMatrix;
         UpdateRequired = false;
 
-        throw new SRIVector<string, ISRIVector<string, double>>(
-            corpus.GetAllDocument().Select(
-                docname => new KeyValuePair<string, ISRIVector<string, double>>(docname, new SRIVector<string, double>(
-                    corpus.GetProcesedDocument(docname).Select(
-                        x => new KeyValuePair<string, double>(x.Item1, TFIDF(docname, x.Item1)))))));
+        // return new SRIVector<string, ISRIVector<string, double>>(
+        //     corpus.GetAllDocument().Select(
+        //         docname => new KeyValuePair<string, ISRIVector<string, double>>(docname, new SRIVector<string, double>(
+        //             corpus.GetProcesedDocument(docname).Select(
+        //                 x => new KeyValuePair<string, double>(x.Item1, TFIDF(docname, x.Item1)))))));
+
+        throw new NotImplementedException();
     }
 
     private double TFIDF(string doc, string term)
