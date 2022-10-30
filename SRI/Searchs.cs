@@ -12,12 +12,25 @@ public class SRIVector<K, T> : ISRIVector<K, T>
 {
     public T this[K index] => throw new NotImplementedException();
 
+    public SRIVector(double[] result)
+    {
+        IEnumerable<int> a = new List<int>();
+    }
+
+    public int Count => throw new NotImplementedException();
+
+
     public IEnumerator<T> GetEnumerator()
     {
         throw new NotImplementedException();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IEnumerable<K> GetKeys()
     {
         throw new NotImplementedException();
     }
@@ -28,12 +41,18 @@ public class SRIVector<K, T> : ISRIVector<K, T>
 /// </summary>
 public class SearchItem
 {
-    public SearchItem(string title, string snippet, double score)
+    public SearchItem(string URL, string title, string snippet, double score)
     {
+        this.URL = URL;
         this.Title = title;
         this.Snippet = snippet;
         this.Score = score;
     }
+
+    /// <summary>
+    /// Dirección del documento recuperado
+    /// </summary>
+    public string URL { get; private set; }
 
     /// <summary>
     /// Título del documento recuperado

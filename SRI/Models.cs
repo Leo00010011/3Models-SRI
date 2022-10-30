@@ -2,12 +2,12 @@ using DP.Interface;
 using SRI.Interface;
 
 namespace SRI;
-public class VSM : ISRIModel<string , int>
+public class VSM : ISRIModel<string , string>
 {
     public bool UpdateRequired { get; private set; }
 
     private IProcesedCorpus? corpus;
-    private ISRIVector<int, ISRIVector<string, double>>? weightMatrix;
+    private ISRIVector<string, ISRIVector<string, double>>? weightMatrix;
 
     public VSM(IProcesedCorpus? corpus = null)
     {
@@ -19,37 +19,59 @@ public class VSM : ISRIModel<string , int>
     public SearchItem[] GetSearchItems()
     {
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        throw new NotImplementedException();
+        if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
+
+        int count = 0;
+        SearchItem[] result = new SearchItem[weightMatrix.Count];
+        foreach (var doc in weightMatrix)
+        {
+            result[count++] = new SearchItem("asd", "asd", "asd", doc.Sum());
+        }
+
+        return result;
     }
 
-    public ISRIVector<int, ISRIVector<string, double>> GetWeightMatrix() 
+    public ISRIVector<string, ISRIVector<string, double>> GetWeightMatrix() 
     {
         if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         throw new NotImplementedException();
     }
 
-    public ISRIVector<int, double> GetTermVector(string index) 
+    public ISRIVector<string, double> GetTermVector(string index) 
     {
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        throw new NotImplementedException();
+        if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
+
+        int count = 0;
+        double[] result = new double[weightMatrix.Count];
+        foreach (var doc in weightMatrix)
+        {
+            result[count++] = doc[index];
+        }
+
+        return new SRIVector<string, double>(result);
     }
 
-    public ISRIVector<string, double> GetDocVector(int index) 
+    public ISRIVector<string, double> GetDocVector(string index) 
     {
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        throw new NotImplementedException();
+        if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
+
+        return weightMatrix[index];
     }
 
     public double SimilarityRate(ISRIVector<string, double> doc1, ISRIVector<string, double> doc2)
     {
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        throw new NotImplementedException();
+
+        return doc1.Scalar_Mult<string>(doc2) / (doc1.Norma2() * doc2.Norma2());
     }
 
     public SearchItem[] Ranking(SearchItem[] searchResult)
     {
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        throw new NotImplementedException();
+
+        return searchResult.OrderBy(x => x.Score).ToArray();
     }
 
     public bool UpdateProcesedCorpus(IProcesedCorpus corpus) => UpdateRequired = object.Equals(corpus, this.corpus);

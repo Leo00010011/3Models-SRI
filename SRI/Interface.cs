@@ -28,6 +28,10 @@ public interface ISearchResult : IEnumerable<SearchItem>
 public interface ISRIVector<K, T> : IEnumerable<T>
 {
     T this[K index] { get; }
+
+    int Count { get; }
+
+    IEnumerable<K> GetKeys();
 }
 
 /// <summary>
