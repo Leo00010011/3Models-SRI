@@ -2,6 +2,7 @@
 
 <PageTitle>SRI</PageTitle>
 
+
 <h1>🖐 Welcome!</h1>
 
 <input class="p-1 my-4" @bind="query" placeholder="Introduzca su búsqueda">
@@ -26,35 +27,45 @@
     </div>
 </div>
 
-@if (!string.IsNullOrEmpty(result)) {
+@if (result != null) {
+   
+    @if(!string.IsNullOrEmpty(result.Suggestion)){
     <div class="suggestion">
-        <p>¿Quisite decir <strong><a @onclick="RunSuggestion" href="#">@result</a></strong>?</p>
+        <p>Se han recuperado <strong>@result.Count</strong> documentos. ¿Quisite decir <strong><a @onclick="RunSuggestion" href="#">@result.Suggestion</a></strong>?</p>
     </div>
-}
-<p>vectorial : @vectorial</p>
-<p>booleano : @boolean</p>
-<p>otro : @other</p>
+    }
 
-@* <ul class="results">
-@foreach (var item in result.Items()) {
+<ul class="results">
+@foreach (var item in result) {
     <li>
         <div class="item">
-            <p class="title">@item.Title</p>
+            <a class="title" href="#"> @item.Title</a>
             <p>... @item.Snippet ...</p>
         </div>
     </li>
 }
-</ul> *@
+</ul>
+}
+
+
+<p>vectorial : @vectorial</p>
+<p>booleano : @boolean</p>
+<p>otro : @other</p>
 
 @code {
     private string query = "";
-    private string result = "";
+
+    private string corpus_address;
+    private ISearchResult result;
+    private IProcesedCorpus corpus;
+    private IDocument procesed_query; 
     private bool vectorial = true;
     private bool boolean;
     private bool other;
 
 
     @* private SearchResult result = new SearchResult(); *@
+
     private void SRISelector(ChangeEventArgs e) {
 
         if (e.Value is not null)
@@ -82,12 +93,28 @@
             }
         }
     }
+    private void GetCorpusFromAddress()
+    {
+       @* corpus = new Corpus(corpus_address); *@
+
+    }
 
     private void RunQuery() {
-        @* result = Moogle.Query(query); *@
+        @* procesed_query = new ProcesedDocument(query); *@
+        ISRIModel<string,string> model;
+        @* if(corpus !=null)
+        {
+            if(vectorial)
+                ISRIModel<string,string> model = VSI(corpus);
+            if(boolean) 
+            if(other) 
+
+        } *@
+        @* result = new SearchResult(model.GetSearchItems(procesed_query)); *@
+
     }
      private void RunSuggestion() {
-         @* query = result.Suggestion; *@
-        @* result = Moogle.Query(result.Suggestion); *@
+        query = result.Suggestion;
+        RunQuery();
     }
 }
