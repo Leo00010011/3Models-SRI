@@ -1,0 +1,93 @@
+﻿@page "/"
+
+<PageTitle>SRI</PageTitle>
+
+<h1>🖐 Welcome!</h1>
+
+<input class="p-1 my-4" @bind="query" placeholder="Introduzca su búsqueda">
+
+<button type="default" class="btn btn-primary" @onclick="RunQuery">🔍 Search</button>
+
+<div>
+
+    <div class="form-check form-check-inline">
+      <input @onchange="SRISelector" class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="1" checked>
+      <label class="form-check-label" for="inlineRadio1">Vectorial Model</label>
+    </div>
+    
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="2" @onchange="SRISelector">
+      <label class="form-check-label" for="inlineRadio2">Boolean Model</label>
+    </div>
+   
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="3" @onchange="SRISelector" disabled>
+      <label class="form-check-label" for="inlineRadio3">Third Model</label>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(result)) {
+    <div class="suggestion">
+        <p>¿Quisite decir <strong><a @onclick="RunSuggestion" href="#">@result</a></strong>?</p>
+    </div>
+}
+<p>vectorial : @vectorial</p>
+<p>booleano : @boolean</p>
+<p>otro : @other</p>
+
+@* <ul class="results">
+@foreach (var item in result.Items()) {
+    <li>
+        <div class="item">
+            <p class="title">@item.Title</p>
+            <p>... @item.Snippet ...</p>
+        </div>
+    </li>
+}
+</ul> *@
+
+@code {
+    private string query = "";
+    private string result = "";
+    private bool vectorial = true;
+    private bool boolean;
+    private bool other;
+
+
+    @* private SearchResult result = new SearchResult(); *@
+    private void SRISelector(ChangeEventArgs e) {
+
+        if (e.Value is not null)
+        {
+            switch (e.Value)
+            { 
+                case "1":
+                    vectorial = true;
+                    boolean= false;
+                    other =false;
+                    break;
+                
+                case "2":
+                    vectorial = false;
+                    boolean= true;
+                    other =false;
+                    break;
+
+                case "3":
+                    vectorial = false;
+                    boolean= false;
+                    other =true;
+                    break;
+
+            }
+        }
+    }
+
+    private void RunQuery() {
+        @* result = Moogle.Query(query); *@
+    }
+     private void RunSuggestion() {
+         @* query = result.Suggestion; *@
+        @* result = Moogle.Query(result.Suggestion); *@
+    }
+}
