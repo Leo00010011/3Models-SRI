@@ -8,32 +8,23 @@ namespace SRI;
 /// </summary>
 /// <typeparam name="K">tipo de llave de dicho vector</typeparam>
 /// <typeparam name="T">tipo de valor que le corresponde a una llave</typeparam>
-public class SRIVector<K, T> : ISRIVector<K, T>
+public class SRIVector<K, T> : ISRIVector<K, T> where K : notnull
 {
-    public T this[K index] => throw new NotImplementedException();
+    Dictionary<K, T> storage;
+    public T this[K index] => storage[index];
 
-    public SRIVector(double[] result)
-    {
-        IEnumerable<int> a = new List<int>();
-    }
+    public SRIVector(IEnumerable<KeyValuePair<K, T>> result) => storage = new Dictionary<K, T>(result);
 
-    public int Count => throw new NotImplementedException();
+    public int Count => storage.Count;
 
 
-    public IEnumerator<T> GetEnumerator()
-    {
-        throw new NotImplementedException();
-    }
+    public IEnumerator<T> GetEnumerator() => storage.Values.GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        throw new NotImplementedException();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => storage.Values.GetEnumerator();
 
-    public IEnumerable<K> GetKeys()
-    {
-        throw new NotImplementedException();
-    }
+    public IEnumerable<K> GetKeys() => storage.Keys;
+
+    public bool ContainsKey(K item1) => storage.ContainsKey(item1);
 }
 
 /// <summary>

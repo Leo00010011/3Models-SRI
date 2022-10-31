@@ -25,7 +25,7 @@ public interface ISearchResult : IEnumerable<SearchItem>
 /// </summary>
 /// <typeparam name="K">tipo de llave de dicho vector</typeparam>
 /// <typeparam name="T">tipo de valor que le corresponde a una llave</typeparam>
-public interface ISRIVector<K, T> : IEnumerable<T>
+public interface ISRIVector<K, T> : IEnumerable<T> where K : notnull
 {
     T this[K index] { get; }
 
@@ -36,6 +36,7 @@ public interface ISRIVector<K, T> : IEnumerable<T>
     /// </summary>
     /// <returns>un enumerable de las llaves</returns>
     IEnumerable<K> GetKeys();
+    bool ContainsKey(K item1);
 }
 
 /// <summary>
@@ -43,7 +44,7 @@ public interface ISRIVector<K, T> : IEnumerable<T>
 /// </summary>
 /// <typeparam name="T">tipo de término en el modelo</typeparam>
 /// <typeparam name="D">tipo de documento en el modelo</typeparam>
-public interface ISRIModel<T, D>
+public interface ISRIModel<T, D> where T: notnull where D: notnull
 {
     /// <summary>
     /// Este método es el encargado de, a partir del peso de los documentos, 
@@ -51,7 +52,7 @@ public interface ISRIModel<T, D>
     /// </summary>
     /// <param name="query">consulta realizada al corpus del modelo</param>
     /// <returns>retorna un array de SearchItem que representa los documentos recuperados</returns>
-    SearchItem[] GetSearchItems(IProcesedDocument query);
+    SearchItem[] GetSearchItems(IResult<string,string,int> query);
 
     /// <summary>
     /// Este método es el encargado de dar valores a la matriz de vectores de documentos
