@@ -16,7 +16,7 @@ public class VSM : ISRIModel<string, string>
         weightMatrix = null;
     }
 
-    public SearchItem[] GetSearchItems(IProcesedDocument query)
+    public SearchItem[] GetSearchItems(IResult<string, string, int> query)
     {
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
@@ -25,7 +25,7 @@ public class VSM : ISRIModel<string, string>
         SearchItem[] result = new SearchItem[weightMatrix.Count];
         foreach (var doc in weightMatrix)
         {
-            result[count++] = new SearchItem("asd", "asd", "asd", query.TermFreqInDoc.Sum(x => (doc.GetKeys().Contains(x.Item1)) ? doc[x.Item1] : 0));
+            result[count++] = new SearchItem("asd", "asd", "asd", query.Sum(x => (doc.GetKeys().Contains(x.Item1)) ? doc[x.Item1] : 0));
         }
 
         return result;
@@ -34,6 +34,9 @@ public class VSM : ISRIModel<string, string>
     public ISRIVector<string, ISRIVector<string, double>> GetWeightMatrix() 
     {
         if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
+
+        
+
         throw new NotImplementedException();
     }
 
@@ -42,14 +45,7 @@ public class VSM : ISRIModel<string, string>
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
-        int count = 0;
-        double[] result = new double[weightMatrix.Count];
-        foreach (var doc in weightMatrix)
-        {
-            result[count++] = doc[index];
-        }
-
-        return new SRIVector<string, double>(result);
+        return new SRIVector<string, double>(weightMatrix.GetKeys().Select(x => (x, weightMatrix[x][index])));
     }
 
     public ISRIVector<string, double> GetDocVector(string index) 
