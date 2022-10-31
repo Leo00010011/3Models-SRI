@@ -18,14 +18,22 @@ public class VSM : ISRIModel<string, string>
 
     public SearchItem[] GetSearchItems(IResult<string, string, int> query)
     {
-        if(!CheckCorpus() || corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
+        if (!CheckCorpus() || corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
+        if (weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
         // int count = 0;
         SearchItem[] result = new SearchItem[weightMatrix.Count];
         // foreach (IDocument doc in corpus.GetAllDocument())
         // {
-        //     result[count++] = new SearchItem(doc.Id, doc.Id, (string)((IEnumerable<char>)doc), query.Sum(x => (weightMatrix.ContainsKey(x.Item1)) ? weightMatrix[doc.Id][x.Item1] : 0));
+        //      double weight = 0;
+        //      foreach (var item in doc)
+        //      {
+        //          try
+        //          {
+        //              weight += weightMatrix[doc.Id][item.Item1];
+        //          } finally { }
+        //      }
+        //      result[count++] = new SearchItem(doc.Id, doc.name, (string)(doc.Take(10).Concat("...")), weight);
         // }
 
         return result;
@@ -49,7 +57,7 @@ public class VSM : ISRIModel<string, string>
         //     LinkedList<KeyValuePair<string, double>> terms = new LinkedList<KeyValuePair<string, double>>();
         //     foreach (var item in termsresult)
         //     {
-        //         double tfidf = TFIDF(docname, item.Item1);
+        //         double tfidf = TFIDF(item.Item2, (...) , (...) , termsresult.Length);
         //         if (tfidf == 0) continue;
 
         //         terms.AddLast(new KeyValuePair<string, double>(item.Item1, tfidf));
@@ -71,10 +79,10 @@ public class VSM : ISRIModel<string, string>
         throw new NotImplementedException();
     }
 
-    private double TFIDF(string doc, string term)
+    private double TFIDF(int term, int termod, int termdocs, int docs)
     {
         if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        return corpus.Frequency(doc, term) * Math.Log(corpus.InvertedFrequency(term));
+        return (term / termod) * Math.Log(docs / termdocs);
     }
 
     public ISRIVector<string, double> GetTermVector(string index) 
@@ -112,12 +120,12 @@ public class VSM : ISRIModel<string, string>
         // {
         //     try
         //     {
-        //         normaDoc1 += Math.Pow(doc1[item], 2);
+        //         normaDoc1 += Math.Pow(doc1[item.id], 2);
         //     } finally { }
         //     try
         //     {
-        //         normaDoc2 += Math.Pow(doc2[item], 2);
-        //         scalarMul += doc1[item] * doc2[item];
+        //         normaDoc2 += Math.Pow(doc2[item.id], 2);
+        //         scalarMul += doc1[item.id] * doc2[item.id];
         //     } finally { }
         // }
 
