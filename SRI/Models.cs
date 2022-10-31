@@ -18,14 +18,14 @@ public class VSM : ISRIModel<string, string>
 
     public SearchItem[] GetSearchItems(IResult<string, string, int> query)
     {
-        if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
+        if(!CheckCorpus() || corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
         int count = 0;
         SearchItem[] result = new SearchItem[weightMatrix.Count];
-        foreach (var doc in weightMatrix)
+        foreach (IDocument doc in corpus.GetAllDocument())
         {
-            result[count++] = new SearchItem("asd", "asd", "asd", query.Sum(x => (doc.GetKeys().Contains(x.Item1)) ? doc[x.Item1] : 0));
+            result[count++] = new SearchItem(doc.Id, doc.Id, (string)((IEnumerable<char>)doc), query.Sum(x => (weightMatrix.ContainsKey(x.Item1)) ? weightMatrix[doc.Id][x.Item1] : 0));
         }
 
         return result;
@@ -34,10 +34,20 @@ public class VSM : ISRIModel<string, string>
     public ISRIVector<string, ISRIVector<string, double>> GetWeightMatrix() 
     {
         if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
+        if(!UpdateRequired && !(weightMatrix is null)) return weightMatrix;
+        UpdateRequired = false;
 
-        
+        throw new SRIVector<string, ISRIVector<string, double>>(
+            corpus.GetAllDocument().Select(
+                docname => new KeyValuePair<string, ISRIVector<string, double>>(docname, new SRIVector<string, double>(
+                    corpus.GetProcesedDocument(docname).Select(
+                        x => new KeyValuePair<string, double>(x.Item1, TFIDF(docname, x.Item1)))))));
+    }
 
-        throw new NotImplementedException();
+    private double TFIDF(string doc, string term)
+    {
+        if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
+        return corpus.Frequency(doc, term) * Math.Log(corpus.InvertedFrequency(term));
     }
 
     public ISRIVector<string, double> GetTermVector(string index) 

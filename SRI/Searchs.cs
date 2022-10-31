@@ -23,6 +23,8 @@ public class SRIVector<K, T> : ISRIVector<K, T> where K : notnull
     IEnumerator IEnumerable.GetEnumerator() => storage.Values.GetEnumerator();
 
     public IEnumerable<K> GetKeys() => storage.Keys;
+
+    public bool ContainsKey(K item1) => storage.ContainsKey(item1);
 }
 
 /// <summary>

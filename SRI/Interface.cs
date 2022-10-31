@@ -36,6 +36,7 @@ public interface ISRIVector<K, T> : IEnumerable<T> where K : notnull
     /// </summary>
     /// <returns>un enumerable de las llaves</returns>
     IEnumerable<K> GetKeys();
+    bool ContainsKey(K item1);
 }
 
 /// <summary>
