@@ -11,17 +11,9 @@ namespace SRI;
 public class SRIVector<K, T> : ISRIVector<K, T> where K : notnull
 {
     Dictionary<K, T> storage;
-    public T this[K index] => throw new NotImplementedException();
+    public T this[K index] => storage[index];
 
-    public SRIVector(IEnumerable<(K, T)> result)
-    {
-        IEnumerable<int> a = new List<int>();
-        storage = new Dictionary<K, T>();
-        foreach (var item in result)
-        {
-            storage.Add(item.Item1, item.Item2);
-        }
-    }
+    public SRIVector(IEnumerable<KeyValuePair<K, T>> result) => storage = new Dictionary<K, T>(result);
 
     public int Count => storage.Count;
 

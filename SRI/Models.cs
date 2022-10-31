@@ -45,7 +45,7 @@ public class VSM : ISRIModel<string, string>
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
-        return new SRIVector<string, double>(weightMatrix.GetKeys().Select(x => (x, weightMatrix[x][index])));
+        return new SRIVector<string, double>(weightMatrix.GetKeys().Select(x => new KeyValuePair<string, double>(x, weightMatrix[x][index])));
     }
 
     public ISRIVector<string, double> GetDocVector(string index) 
@@ -60,7 +60,26 @@ public class VSM : ISRIModel<string, string>
     {
         if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
 
-        return doc1.Scalar_Mult<string>(doc2) / (doc1.Norma2() * doc2.Norma2());
+        double normaDoc1 = 0, normaDoc2 = 0, scalarMul = 0;
+
+        foreach (var item in doc1.GetKeys())
+        {
+            try
+            {
+                normaDoc1 += Math.Pow(doc1[item], 2);
+                normaDoc2 += Math.Pow(doc2[item], 2);
+                scalarMul += doc1[item] * doc2[item];
+            }
+            catch (System.Exception)
+            {
+                throw new ArgumentOutOfRangeException("los vectores tienen que ser del mismo espacio vectorial");
+            }
+        }
+
+        normaDoc1 = Math.Pow(normaDoc1, 0.5);
+        normaDoc2 = Math.Pow(normaDoc2, 0.5);
+
+        return scalarMul / (normaDoc1 * normaDoc2);
     }
 
     public SearchItem[] Ranking(SearchItem[] searchResult)
