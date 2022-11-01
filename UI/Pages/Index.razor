@@ -2,12 +2,19 @@
 
 <PageTitle>SRI</PageTitle>
 
+@if( @* corpus ==null || *@ add_corpus_path)
+{
+    <input class="p-1 my-4" @bind="corpus_path" placeholder="Add path to load corpus">
+    <button type="default" class="btn btn-outline-secondary mx-1"  @onclick="UpdateCorpus">Accept</button>
+}
+@if(!add_corpus_path @* && corpus != null*@ )
+{
+<h1>Hi👋, Welcome!</h1>
 
-<h1>🖐 Welcome!</h1>
+<input class="p-1 my-1" @bind="query" placeholder="Introduzca su búsqueda">
 
-<input class="p-1 my-4" @bind="query" placeholder="Introduzca su búsqueda">
-
-<button type="default" class="btn btn-primary" @onclick="RunQuery">🔍 Search</button>
+<button type="default" class="btn btn-primary mx-1" @onclick="RunQuery">🔍 Search</button>
+<button type="default" class="btn btn-outline-secondary"  @onclick="SetAddPath">+📚</button>
 
 <div>
 
@@ -46,31 +53,39 @@
 }
 </ul>
 }
+}
+ @* @FileUpload.GetHtml(
+        initialNumberOfFiles:1,
+        allowMoreFilesToBeAdded:false,
+        includeFormTag:true,
+        uploadText:"Upload")
+     @if (IsPost) {
+        <span>File uploaded!</span><br/>
+    } *@
 
-
-<p>vectorial : @vectorial</p>
-<p>booleano : @boolean</p>
-<p>otro : @other</p>
 
 @code {
-    private string query = "";
 
-    private string corpus_address;
-    private ISearchResult result;
-    private IProcesedCorpus corpus;
-    private IDocument procesed_query; 
+    private string query = "";
+    private string corpus_path = "";
+    private ISearchResult ? result;
+    private IProcesedCorpus ? corpus;
+    private IResult<string,string,int> ? processed_query; 
+    private bool add_corpus_path=true;
     private bool vectorial = true;
     private bool boolean;
     private bool other;
 
 
-    @* private SearchResult result = new SearchResult(); *@
-
-    private void SRISelector(ChangeEventArgs e) {
+    /// <summary>
+    /// Este metodo settea en true el tipo de modelo SRI seleccionado en los radio buttons
+    /// </summary>
+    /// <param name="e"></param>
+     private void SRISelector(ChangeEventArgs e) {
 
         if (e.Value is not null)
         {
-            switch (e.Value)
+            switch(e.Value)
             { 
                 case "1":
                     vectorial = true;
@@ -93,28 +108,66 @@
             }
         }
     }
-    private void GetCorpusFromAddress()
+    
+    /// <summary>
+    /// Este metodo obtiene el corpus del SRI a partir de los archivos en el directorio y subdirectorios especificados en una direccion determinada
+    /// </summary>
+    private void UpdateCorpus()
     {
-       @* corpus = new Corpus(corpus_address); *@
+        @* corpus = UpdateCorpus(corpus_path); *@
+        add_corpus_path = false;
 
     }
+     private void SetAddPath()
+    {
+        add_corpus_path= true;
+        corpus_path = "";
+    }
 
-    private void RunQuery() {
-        @* procesed_query = new ProcesedDocument(query); *@
-        ISRIModel<string,string> model;
-        @* if(corpus !=null)
+    /// <summary>
+    /// Este metodo rehace la recuperacion de documentos a partir de la sugerencia de la busqueda anterior
+    /// </summary>
+    private void RunSuggestion() 
+    {
+        if(result !=null && !string.IsNullOrEmpty(result.Suggestion))
+        {   
+            query = result.Suggestion;
+            RunQuery();
+        }
+    }
+
+    /// <summary>
+    /// Metodo para obtener los documentos relevantes a una consulta(query) segun el modelo de SRI correspondiente
+    /// </summary>
+    
+    private void RunQuery() 
+    {
+        if(!string.IsNullOrEmpty(query))
         {
-            if(vectorial)
-                ISRIModel<string,string> model = VSI(corpus);
-            if(boolean) 
-            if(other) 
+            @* processed_query = new ProcesedDocument(query); *@
 
-        } *@
-        @* result = new SearchResult(model.GetSearchItems(procesed_query)); *@
+            if(corpus !=null && processed_query != null)
+            {
+                if(vectorial)
+                {
+                    ISRIModel<string,string> model = new VSM(corpus); 
+                    result = new SearchResult(model.GetSearchItems(processed_query)); 
+                }
+                @* if(boolean) 
+                {
+
+                add code for boolean research model
+                }
+                if(other) 
+                {
+
+                add code for other research model 
+                }*@
+
+            } 
+        }
 
     }
-     private void RunSuggestion() {
-        query = result.Suggestion;
-        RunQuery();
-    }
+    
+
 }
