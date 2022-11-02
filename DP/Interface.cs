@@ -10,6 +10,11 @@ public interface IDocument : IEnumerable<char>
         get;
     }
 
+    IEnumerable<char> Name
+    {
+        get;
+    }
+
     DateTime ModifiedDateTime
     {
         get;

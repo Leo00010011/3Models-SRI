@@ -57,7 +57,7 @@ public class VSM : ISRIModel<string, string>
         //     LinkedList<KeyValuePair<string, double>> terms = new LinkedList<KeyValuePair<string, double>>();
         //     foreach (var item in termsresult)
         //     {
-        //         double tfidf = TFIDF(item.Item2, (...) , (...) , termsresult.Length);
+        //         double tfidf = TFIDF(item.Item2, (...) , corpus.InvertedFrequency() , corpus.CantidadDeDocumentos);
         //         if (tfidf == 0) continue;
 
         //         terms.AddLast(new KeyValuePair<string, double>(item.Item1, tfidf));
@@ -79,10 +79,10 @@ public class VSM : ISRIModel<string, string>
         throw new NotImplementedException();
     }
 
-    private double TFIDF(int term, int termod, int termdocs, int docs)
+    private double TFIDF(int term, int modalterm, int termdocs, int docs)
     {
         if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        return (term / termod) * Math.Log(docs / termdocs);
+        return (term / modalterm) * Math.Log(docs / termdocs);
     }
 
     public ISRIVector<string, double> GetTermVector(string index) 
