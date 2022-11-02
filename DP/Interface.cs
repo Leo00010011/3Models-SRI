@@ -19,6 +19,8 @@ public interface IDocument : IEnumerable<char>
     {
         get;
     }
+    
+    IEnumerable<char> GetSnippet();
 }
 
 public interface IResult<TValue,KKey,MPiece> : IEnumerable<(string,int)>

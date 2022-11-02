@@ -1,4 +1,9 @@
 ﻿// See https://aka.ms/new-console-template for more information
 Console.WriteLine("Hello, World!");
 
-Directory.GetFiles("URL", ".txt", new EnumerationOptions() { RecurseSubdirectories = true });
+string[] docsID = Directory.GetFiles("URL", ".txt", new EnumerationOptions() { RecurseSubdirectories = true });
+
+foreach (var id in docsID)
+{
+    
+}

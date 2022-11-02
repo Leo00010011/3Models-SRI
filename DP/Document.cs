@@ -3,14 +3,14 @@ using DP.Interface;
 
 public class Document : IDocument
 {
-    private IEnumerable<char> snippet;
+    private int maxSnippetSize;
 
-    public Document(string id, IEnumerable<char> snippet)
+    public Document(string id, int maxSnippetSize = 30)
     {
         Id = id;
-        Name = id.Reverse().TakeWhile(x => x != '\\').Reverse();
+        this.maxSnippetSize = maxSnippetSize;
         ModifiedDateTime = File.GetLastWriteTime(id);
-        this.snippet = snippet;
+        Name = id.Reverse().TakeWhile(x => x != '\\').Reverse();
     }
 
     public string Id { get; private set; }
@@ -19,7 +19,29 @@ public class Document : IDocument
 
     public DateTime ModifiedDateTime { get; private set; }
 
-    public IEnumerator<char> GetEnumerator() => snippet.GetEnumerator();
+    private IEnumerable<char> GetChars(StreamReader reader)
+    {
+        while(!reader.EndOfStream)
+            yield return char.ToLower((char)reader.Read());
+    }
+    
+    private IEnumerable<char> GetEnumerable()
+    {
+        StreamReader reader = new StreamReader(Id);
+        foreach (var item in GetChars(reader))
+            yield return item;
+        reader.Close();
+    }
 
-    IEnumerator IEnumerable.GetEnumerator() => snippet.GetEnumerator();
+    public IEnumerable<char> GetSnippet()
+    {
+        StreamReader reader = new StreamReader(Id);
+        foreach (var item in GetChars(reader).Take(maxSnippetSize))
+            yield return item;
+        reader.Close();
+    }
+
+    public IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerable().GetEnumerator();
 }
