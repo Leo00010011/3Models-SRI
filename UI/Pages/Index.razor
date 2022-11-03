@@ -1,0 +1,173 @@
+﻿@page "/"
+
+<PageTitle>SRI</PageTitle>
+
+@if( @* corpus ==null || *@ add_corpus_path)
+{
+    <input class="p-1 my-4" @bind="corpus_path" placeholder="Add path to load corpus">
+    <button type="default" class="btn btn-outline-secondary mx-1"  @onclick="UpdateCorpus">Accept</button>
+}
+@if(!add_corpus_path @* && corpus != null*@ )
+{
+<h1>Hi👋, Welcome!</h1>
+
+<input class="p-1 my-1" @bind="query" placeholder="Introduzca su búsqueda">
+
+<button type="default" class="btn btn-primary mx-1" @onclick="RunQuery">🔍 Search</button>
+<button type="default" class="btn btn-outline-secondary"  @onclick="SetAddPath">+📚</button>
+
+<div>
+
+    <div class="form-check form-check-inline">
+      <input @onchange="SRISelector" class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="1" checked>
+      <label class="form-check-label" for="inlineRadio1">Vectorial Model</label>
+    </div>
+    
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="2" @onchange="SRISelector">
+      <label class="form-check-label" for="inlineRadio2">Boolean Model</label>
+    </div>
+   
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="3" @onchange="SRISelector" disabled>
+      <label class="form-check-label" for="inlineRadio3">Third Model</label>
+    </div>
+</div>
+
+@if (result != null) {
+   
+    @if(!string.IsNullOrEmpty(result.Suggestion)){
+    <div class="suggestion">
+        <p>Se han recuperado <strong>@result.Count</strong> documentos. ¿Quisite decir <strong><a @onclick="RunSuggestion" href="#">@result.Suggestion</a></strong>?</p>
+    </div>
+    }
+
+<ul class="results">
+@foreach (var item in result) {
+    <li>
+        <div class="item">
+            <a class="title" href="#"> @item.Title</a>
+            <p>... @item.Snippet ...</p>
+        </div>
+    </li>
+}
+</ul>
+}
+}
+ @* @FileUpload.GetHtml(
+        initialNumberOfFiles:1,
+        allowMoreFilesToBeAdded:false,
+        includeFormTag:true,
+        uploadText:"Upload")
+     @if (IsPost) {
+        <span>File uploaded!</span><br/>
+    } *@
+
+
+@code {
+
+    private string query = "";
+    private string corpus_path = "";
+    private ISearchResult ? result;
+    private IProcesedCorpus ? corpus;
+    private IResult<string,string,int> ? processed_query; 
+    private bool add_corpus_path=true;
+    private bool vectorial = true;
+    private bool boolean;
+    private bool other;
+
+
+    /// <summary>
+    /// Este metodo settea en true el tipo de modelo SRI seleccionado en los radio buttons
+    /// </summary>
+    /// <param name="e"></param>
+     private void SRISelector(ChangeEventArgs e) {
+
+        if (e.Value is not null)
+        {
+            switch(e.Value)
+            { 
+                case "1":
+                    vectorial = true;
+                    boolean= false;
+                    other =false;
+                    break;
+                
+                case "2":
+                    vectorial = false;
+                    boolean= true;
+                    other =false;
+                    break;
+
+                case "3":
+                    vectorial = false;
+                    boolean= false;
+                    other =true;
+                    break;
+
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Este metodo obtiene el corpus del SRI a partir de los archivos en el directorio y subdirectorios especificados en una direccion determinada
+    /// </summary>
+    private void UpdateCorpus()
+    {
+        @* corpus = UpdateCorpus(corpus_path); *@
+        add_corpus_path = false;
+
+    }
+     private void SetAddPath()
+    {
+        add_corpus_path= true;
+        corpus_path = "";
+    }
+
+    /// <summary>
+    /// Este metodo rehace la recuperacion de documentos a partir de la sugerencia de la busqueda anterior
+    /// </summary>
+    private void RunSuggestion() 
+    {
+        if(result !=null && !string.IsNullOrEmpty(result.Suggestion))
+        {   
+            query = result.Suggestion;
+            RunQuery();
+        }
+    }
+
+    /// <summary>
+    /// Metodo para obtener los documentos relevantes a una consulta(query) segun el modelo de SRI correspondiente
+    /// </summary>
+    
+    private void RunQuery() 
+    {
+        if(!string.IsNullOrEmpty(query))
+        {
+            @* processed_query = new ProcesedDocument(query); *@
+
+            if(corpus !=null && processed_query != null)
+            {
+                if(vectorial)
+                {
+                    ISRIModel<string,string> model = new VSM(corpus); 
+                    result = new SearchResult(model.GetSearchItems(processed_query)); 
+                }
+                @* if(boolean) 
+                {
+
+                add code for boolean research model
+                }
+                if(other) 
+                {
+
+                add code for other research model 
+                }*@
+
+            } 
+        }
+
+    }
+    
+
+}
