@@ -10,10 +10,17 @@ public interface IDocument : IEnumerable<char>
         get;
     }
 
+    IEnumerable<char> Name
+    {
+        get;
+    }
+
     DateTime ModifiedDateTime
     {
         get;
     }
+    
+    IEnumerable<char> GetSnippet();
 }
 
 public interface IResult<TValue,KKey,MPiece> : IEnumerable<(KKey,MPiece)>
