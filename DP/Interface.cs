@@ -1,7 +1,7 @@
 ﻿namespace DP.Interface;
+
 using System;
 using System.Collections.Generic;
-
 
 public interface IDocument : IEnumerable<char>
 {
@@ -19,7 +19,8 @@ public interface IDocument : IEnumerable<char>
     {
         get;
     }
-    
+    int ModalFrec { get; }
+
     IEnumerable<char> GetSnippet();
 }
 

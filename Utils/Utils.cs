@@ -6,33 +6,33 @@ public static class Utils
 
     public static HashSet<string> GetStopWords()
     {
-        if(stopWords == null)
-            stopWords = new HashSet<string>(new string[]{"pronombres","palabras","..."});
+        if (stopWords == null)
+            stopWords = new HashSet<string>(new string[] { "pronombres", "palabras", "..." });
         return stopWords;
     }
 
     public static IEnumerable<string> GetTerms(IEnumerable<char> text)
     {
         LinkedList<char>? currentTerm = null;
-        
-        foreach(char item in text)
+
+        foreach (char item in text)
         {
-            if(Char.IsLetterOrDigit(item))
+            if (Char.IsLetterOrDigit(item))
             {
-                if(currentTerm == null)
+                if (currentTerm == null)
                     currentTerm = new LinkedList<char>();
                 currentTerm.AddLast(item);
             }
             else
             {
-                if(currentTerm != null)
+                if (currentTerm != null)
                 {
                     yield return String.Concat(currentTerm);
                     currentTerm = null;
                 }
             }
         }
-        if(currentTerm != null)
+        if (currentTerm != null)
             yield return String.Concat(currentTerm);
-    }   
+    }
 }

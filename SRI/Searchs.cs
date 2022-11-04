@@ -3,6 +3,26 @@ using SRI.Interface;
 
 namespace SRI;
 
+public class Weight : IWeight
+{
+    private int InvFrec;
+
+    public Weight(int item2)
+    {
+    }
+
+    public int Frec { get; private set; }
+
+    public double GetWeight(int ModalFrec, int DocsLength) => Frec / ModalFrec * Math.Log(DocsLength / InvFrec);
+
+    public bool UpdateWeight(int InvFrec)
+    {
+        if (this.InvFrec == InvFrec) return false;
+        this.InvFrec = InvFrec;
+        return true;
+    }
+}
+
 /// <summary>
 /// Representa un vector en el modelo de SRI
 /// </summary>
@@ -32,7 +52,7 @@ public class SRIVector<K, T> : ISRIVector<K, T> where K : notnull
 /// </summary>
 public class SearchItem
 {
-    public SearchItem(string URL, string title, string snippet, double score)
+    public SearchItem(string URL, IEnumerable<char> title, IEnumerable<char> snippet, double score)
     {
         this.URL = URL;
         this.Title = title;
@@ -48,12 +68,12 @@ public class SearchItem
     /// <summary>
     /// Título del documento recuperado
     /// </summary>
-    public string Title { get; private set; }
+    public IEnumerable<char> Title { get; private set; }
 
     /// <summary>
     /// Pequeña representación del documento recuperado
     /// </summary>
-    public string Snippet { get; private set; }
+    public IEnumerable<char> Snippet { get; private set; }
 
     /// <summary>
     /// Peso del documento según el modelo empleado

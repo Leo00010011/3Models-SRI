@@ -1,6 +1,6 @@
-using DP.Interface;
-
 namespace SRI.Interface;
+
+using DP.Interface;
 
 /// <summary>
 /// Representa la interfaz del resultado de una consulta en un modelo de SRI
@@ -39,6 +39,15 @@ public interface ISRIVector<K, T> : IEnumerable<T> where K : notnull
     bool ContainsKey(K item1);
 }
 
+public interface IWeight
+{
+    int Frec { get; }
+
+    double GetWeight(int ModalFrec, int DocsLength);
+
+    bool UpdateWeight(int InvFrec);
+}
+
 /// <summary>
 /// Representa la interfaz de un modelo genérico en un SRI
 /// </summary>
@@ -52,13 +61,13 @@ public interface ISRIModel<T, D> where T: notnull where D: notnull
     /// </summary>
     /// <param name="query">consulta realizada al corpus del modelo</param>
     /// <returns>retorna un array de SearchItem que representa los documentos recuperados</returns>
-    SearchItem[] GetSearchItems(IResult<string,string,int> query);
+    SearchItem[] GetSearchItems(ISRIVector<string, double> query);
 
     /// <summary>
     /// Este método es el encargado de dar valores a la matriz de vectores de documentos
     /// </summary>
     /// <returns>retorna un vector de vectores de documentos</returns>
-    ISRIVector<D, ISRIVector<T, double>> GetWeightMatrix();
+    void GenWeightMatrix(IEnumerable<IDocument>? corpus);
 
     /// <summary>
     /// Este método se utiliza para selecionar un vector de término específico
@@ -72,7 +81,7 @@ public interface ISRIModel<T, D> where T: notnull where D: notnull
     /// </summary>
     /// <param name="index">es el identificador de dicho documento en el modelo</param>
     /// <returns>retorna un vector documento</returns>
-    ISRIVector<T, double> GetDocVector(D index);
+    ISRIVector<T, double> GetDocVector(IDocument index);
 
     /// <summary>
     /// Este método se utiliza para comparar cuán semejantes son dos documentos dentro
@@ -90,12 +99,4 @@ public interface ISRIModel<T, D> where T: notnull where D: notnull
     /// <param name="searchResult"></param>
     /// <returns></returns>
     SearchItem[] Ranking(SearchItem[] searchResult);
-
-    /// <summary>
-    /// Se usa para actualizar los valores del corpus del modelo en caso de que el contenido
-    /// de dichos documentos cambie
-    /// </summary>
-    /// <param name="corpus">el nuevo corpus que se va a utilizar</param>
-    /// <returns>retorna true si se reemplazó dicho corpus con éxito</returns>
-    bool UpdateProcesedCorpus(IProcesedCorpus corpus);
 }

@@ -1,133 +1,102 @@
+namespace SRI;
+
+using DP;
 using DP.Interface;
 using SRI.Interface;
 
-namespace SRI;
 public class VSM : ISRIModel<string, string>
 {
-    public bool UpdateRequired { get; private set; }
+    private ISRIVector<IDocument, ISRIVector<string, IWeight>>? weightMatrix;
+    private ISRIVector<string, double>? InvFrecTerms;
 
-    private IProcesedCorpus? corpus;
-    private ISRIVector<string, ISRIVector<string, double>>? weightMatrix;
+    public VSM(IEnumerable<IDocument>? corpus = null) => GenWeightMatrix(corpus);
 
-    public VSM(IProcesedCorpus? corpus = null)
+    public SearchItem[] GetSearchItems(ISRIVector<string, double> query)
     {
-        UpdateRequired = !(corpus is null);
-        this.corpus = corpus;
-        weightMatrix = null;
-    }
-
-    public SearchItem[] GetSearchItems(IResult<string, string, int> query)
-    {
-        if (!CheckCorpus() || corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
+        // if (!CheckCorpus() || corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         if (weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
-        // int count = 0;
+        int count = 0;
         SearchItem[] result = new SearchItem[weightMatrix.Count];
-        // foreach (IDocument doc in corpus.GetAllDocument())
-        // {
-        //      double weight = 0;
-        //      foreach (var item in doc)
-        //      {
-        //          try
-        //          {
-        //              weight += weightMatrix[doc.Id][item.Item1];
-        //          } finally { }
-        //      }
-        //      result[count++] = new SearchItem(doc.Id, doc.name, (string)(doc.Take(10).Concat("...")), weight);
-        // }
+        foreach (IDocument doc in weightMatrix.GetKeys())
+        {
+            result[count++] = new SearchItem(doc.Id, doc.Name, doc.GetSnippet(), SimilarityRate(query, GetDocVector(doc)));
+        }
 
         return result;
     }
 
-    public ISRIVector<string, ISRIVector<string, double>> GetWeightMatrix() 
+    public void GenWeightMatrix(IEnumerable<IDocument>? corpus = null)
     {
-        if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        if(!UpdateRequired && !(weightMatrix is null)) return weightMatrix;
-        UpdateRequired = false;
+        if (corpus is null) return;
 
-        // var docsresult = corpus.GetAllDocument();
-        // if (docsresult.Length == 0) return default(ISRIVector<string, ISRIVector<string, double>>);
+        LinkedList<KeyValuePair<IDocument, ISRIVector<string, IWeight>>> docs = new LinkedList<KeyValuePair<IDocument, ISRIVector<string, IWeight>>>();
+        foreach (IDocument docname in corpus)
+        {
+            ProcesedDocument termsresult = new ProcesedDocument(docname);
+            if (termsresult.Length == 0) continue;
 
-        // LinkedList<KeyValuePair<string, ISRIVector<string, double>>> docs = new LinkedList<KeyValuePair<string, ISRIVector<string, double>>>();
-        // foreach (var docname in docsresult)
-        // {
-        //     var termsresult = corpus.GetProcesedDocument(docname);
-        //     if (termsresult.Length == 0) continue;
+            LinkedList<KeyValuePair<string, IWeight>> terms = new LinkedList<KeyValuePair<string, IWeight>>();
+            foreach ((string, int) item in termsresult)
+            {
+                if (item.Item2 == 0) continue;
+                // InvFrecTerms
+                terms.AddLast(new KeyValuePair<string, IWeight>(item.Item1, new Weight(item.Item2)));
+            }
 
-        //     LinkedList<KeyValuePair<string, double>> terms = new LinkedList<KeyValuePair<string, double>>();
-        //     foreach (var item in termsresult)
-        //     {
-        //         double tfidf = TFIDF(item.Item2, (...) , corpus.InvertedFrequency() , corpus.CantidadDeDocumentos);
-        //         if (tfidf == 0) continue;
+            docs.AddLast(new KeyValuePair<IDocument, ISRIVector<string, IWeight>>(docname, new SRIVector<string, IWeight>(terms)));
+        }
 
-        //         terms.AddLast(new KeyValuePair<string, double>(item.Item1, tfidf));
-        //     }
-
-        //     docs.AddLast(new KeyValuePair<string, ISRIVector<string, double>>(docname, new SRIVector<string, double>(terms)));
-        // }
-
-        // return new SRIVector<string, ISRIVector<string, double>>(docs);
-
-        
-
-        // return new SRIVector<string, ISRIVector<string, double>>(
-        //     corpus.GetAllDocument().Select(
-        //         docname => new KeyValuePair<string, ISRIVector<string, double>>(docname, new SRIVector<string, double>(
-        //             corpus.GetProcesedDocument(docname).Select(
-        //                 x => new KeyValuePair<string, double>(x.Item1, TFIDF(docname, x.Item1)))))));
-
-        throw new NotImplementedException();
+        weightMatrix = new SRIVector<IDocument, ISRIVector<string, IWeight>>(docs);
     }
 
     private double TFIDF(int term, int modalterm, int termdocs, int docs)
     {
-        if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
+        // if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
         return (term / modalterm) * Math.Log(docs / termdocs);
     }
 
-    public ISRIVector<string, double> GetTermVector(string index) 
+    public ISRIVector<string, double> GetTermVector(string index)
     {
-        if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
+        if (weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
         LinkedList<KeyValuePair<string, double>> values = new LinkedList<KeyValuePair<string, double>>();
-        foreach (var item in weightMatrix.GetKeys())
+        foreach (IDocument item in weightMatrix.GetKeys())
         {
             try
             {
-                values.AddLast(new KeyValuePair<string, double>(item, weightMatrix[item][index]));
-            } finally { }
+                values.AddLast(new KeyValuePair<string, double>(item.Id, weightMatrix[item][index].GetWeight(item.ModalFrec, weightMatrix.Count)));
+            }
+            finally { }
         }
 
         return new SRIVector<string, double>(values);
     }
 
-    public ISRIVector<string, double> GetDocVector(string index) 
+    public ISRIVector<string, double> GetDocVector(IDocument index)
     {
-        if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        if(weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
+        if (weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
-        return weightMatrix[index];
+        return new SRIVector<string, double>(weightMatrix[index].GetKeys().Zip(weightMatrix[index]).Select(x => new KeyValuePair<string, double>(x.First, x.Second.GetWeight(index.ModalFrec, weightMatrix.Count))));
     }
 
     public double SimilarityRate(ISRIVector<string, double> doc1, ISRIVector<string, double> doc2)
     {
-        if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-
+        if (InvFrecTerms is null) return -1;
         double normaDoc1 = 0, normaDoc2 = 0, scalarMul = 0;
 
-        // foreach (var item in corpus.GetAllDocument())
-        // {
-        //     try
-        //     {
-        //         normaDoc1 += Math.Pow(doc1[item.id], 2);
-        //     } finally { }
-        //     try
-        //     {
-        //         normaDoc2 += Math.Pow(doc2[item.id], 2);
-        //         scalarMul += doc1[item.id] * doc2[item.id];
-        //     } finally { }
-        // }
+        foreach (string item in InvFrecTerms.GetKeys())
+        {
+            try
+            {
+                normaDoc1 += Math.Pow(doc1[item], 2);
+            } finally { }
+            try
+            {
+                normaDoc2 += Math.Pow(doc2[item], 2);
+                scalarMul += doc1[item] * doc2[item];
+            } finally { }
+        }
 
         normaDoc1 = Math.Pow(normaDoc1, 0.5);
         normaDoc2 = Math.Pow(normaDoc2, 0.5);
@@ -137,18 +106,7 @@ public class VSM : ISRIModel<string, string>
 
     public SearchItem[] Ranking(SearchItem[] searchResult)
     {
-        if(!CheckCorpus()) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
 
         return searchResult.OrderBy(x => x.Score).ToArray();
-    }
-
-    public bool UpdateProcesedCorpus(IProcesedCorpus corpus) => UpdateRequired = object.Equals(corpus, this.corpus);
-
-    private bool CheckCorpus()
-    {
-        if(!UpdateRequired || corpus is null) return !UpdateRequired;
-
-        weightMatrix = GetWeightMatrix();
-        return true;
     }
 }

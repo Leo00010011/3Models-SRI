@@ -1,3 +1,5 @@
+namespace DP;
+
 using System.Collections;
 using DP.Interface;
 
@@ -19,12 +21,14 @@ public class Document : IDocument
 
     public DateTime ModifiedDateTime { get; private set; }
 
+    public int ModalFrec { get; set; }
+
     private IEnumerable<char> GetChars(StreamReader reader)
     {
-        while(!reader.EndOfStream)
+        while (!reader.EndOfStream)
             yield return char.ToLower((char)reader.Read());
     }
-    
+
     private IEnumerable<char> GetEnumerable()
     {
         StreamReader reader = new StreamReader(Id);
