@@ -1,112 +1,74 @@
 namespace SRI;
 
+using System.Collections;
 using DP;
 using DP.Interface;
 using SRI.Interface;
 
-public class VSM : ISRIModel<string, string>
+public abstract class SRIModel<D, T> : ISRIModel<D, T>, ICollection<IDocument> where D: notnull where T: notnull
 {
-    private ISRIVector<IDocument, ISRIVector<string, IWeight>>? weightMatrix;
-    private ISRIVector<string, double>? InvFrecTerms;
+    protected Storage<IDocument, T, IWeight>? storage;
 
-    public VSM(IEnumerable<IDocument>? corpus = null) => GenWeightMatrix(corpus);
+    public virtual int Count => storage!.Count;
+    public bool IsReadOnly => true;
 
-    public SearchItem[] GetSearchItems(ISRIVector<string, double> query)
+    public virtual SearchItem[] GetSearchItems(IDictionary<T, double> query)
     {
-        // if (!CheckCorpus() || corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        if (weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
-
-        int count = 0;
-        SearchItem[] result = new SearchItem[weightMatrix.Count];
-        foreach (IDocument doc in weightMatrix.GetKeys())
-        {
-            result[count++] = new SearchItem(doc.Id, doc.Name, doc.GetSnippet(), SimilarityRate(query, GetDocVector(doc)));
-        }
-
+        storage!.UpdateDocs(); /*analizar si es null*/ int count = 0; SearchItem[] result = new SearchItem[storage.Count];
+        foreach (var item in storage)
+            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(), SimilarityRate(query, storage[item]));
         return result;
     }
 
-    public void GenWeightMatrix(IEnumerable<IDocument>? corpus = null)
+    public virtual SearchItem[] Ranking(SearchItem[] searchResult) => searchResult.OrderBy(x => x.Score).ToArray();
+    public abstract double SimilarityRate(IDictionary<T, double> doc1, (IDictionary<T, IWeight>, int) doc2);
+
+    public virtual void Add(IDocument item) => storage!.Add(item);
+    public virtual void Clear() => storage!.Clear();
+    public virtual bool Contains(IDocument item) => storage!.Contains(item);
+    public virtual void CopyTo(IDocument[] array, int arrayIndex) => storage!.CopyTo(array, arrayIndex);
+    public virtual bool Remove(IDocument item) => storage!.Remove(item);
+
+    public abstract IEnumerator<IDocument> GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public class VSM : SRIModel<string, string>, ISRIModel<string, string>, ICollection<IDocument>
+{
+    protected new VSMStorage storage;
+
+    public VSM(IEnumerable<IDocument>? corpus = null) => storage = new VSMStorage(corpus);
+
+    public override IEnumerator<IDocument> GetEnumerator() => storage.GetEnumerator();
+
+    public override double SimilarityRate(IDictionary<string, double> doc1, (IDictionary<string, IWeight>, int) doc2)
     {
-        if (corpus is null) return;
-
-        LinkedList<KeyValuePair<IDocument, ISRIVector<string, IWeight>>> docs = new LinkedList<KeyValuePair<IDocument, ISRIVector<string, IWeight>>>();
-        foreach (IDocument docname in corpus)
-        {
-            ProcesedDocument termsresult = new ProcesedDocument(docname);
-            if (termsresult.Length == 0) continue;
-
-            LinkedList<KeyValuePair<string, IWeight>> terms = new LinkedList<KeyValuePair<string, IWeight>>();
-            foreach ((string, int) item in termsresult)
-            {
-                if (item.Item2 == 0) continue;
-                // InvFrecTerms
-                terms.AddLast(new KeyValuePair<string, IWeight>(item.Item1, new Weight(item.Item2)));
-            }
-
-            docs.AddLast(new KeyValuePair<IDocument, ISRIVector<string, IWeight>>(docname, new SRIVector<string, IWeight>(terms)));
-        }
-
-        weightMatrix = new SRIVector<IDocument, ISRIVector<string, IWeight>>(docs);
-    }
-
-    private double TFIDF(int term, int modalterm, int termdocs, int docs)
-    {
-        // if(corpus is null) throw new InvalidOperationException("no existe un corpus al que aplicarle el modelo, considere usar el método UpdateProcesedCorpus");
-        return (term / modalterm) * Math.Log(docs / termdocs);
-    }
-
-    public ISRIVector<string, double> GetTermVector(string index)
-    {
-        if (weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
-
-        LinkedList<KeyValuePair<string, double>> values = new LinkedList<KeyValuePair<string, double>>();
-        foreach (IDocument item in weightMatrix.GetKeys())
-        {
-            try
-            {
-                values.AddLast(new KeyValuePair<string, double>(item.Id, weightMatrix[item][index].GetWeight(item.ModalFrec, weightMatrix.Count)));
-            }
-            finally { }
-        }
-
-        return new SRIVector<string, double>(values);
-    }
-
-    public ISRIVector<string, double> GetDocVector(IDocument index)
-    {
-        if (weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
-
-        return new SRIVector<string, double>(weightMatrix[index].GetKeys().Zip(weightMatrix[index]).Select(x => new KeyValuePair<string, double>(x.First, x.Second.GetWeight(index.ModalFrec, weightMatrix.Count))));
-    }
-
-    public double SimilarityRate(ISRIVector<string, double> doc1, ISRIVector<string, double> doc2)
-    {
-        if (InvFrecTerms is null) return -1;
+        if (storage.InvFrecTerms is null) return -1;
         double normaDoc1 = 0, normaDoc2 = 0, scalarMul = 0;
 
-        foreach (string item in InvFrecTerms.GetKeys())
+        foreach (var item in storage.InvFrecTerms)
         {
             try
             {
-                normaDoc1 += Math.Pow(doc1[item], 2);
-            } finally { }
+                normaDoc1 += Math.Pow(doc1[item.Key], 2);
+            }
+            finally { }
             try
             {
-                normaDoc2 += Math.Pow(doc2[item], 2);
-                scalarMul += doc1[item] * doc2[item];
-            } finally { }
+                if (!(doc2.Item1[item.Key] is Weight)) throw new ArgumentException("");
+                Weight doc2Weight = (doc2.Item1[item.Key] as Weight)!;
+                doc2Weight.Update(doc2.Item2, storage.Count, item.Value);
+                double weight = doc2Weight.GetWeight();
+                
+                normaDoc2 += Math.Pow(weight, 2);
+                scalarMul += doc1[item.Key] * weight;
+            }
+            finally { }
         }
 
         normaDoc1 = Math.Pow(normaDoc1, 0.5);
         normaDoc2 = Math.Pow(normaDoc2, 0.5);
 
         return scalarMul / (normaDoc1 * normaDoc2);
-    }
-
-    public SearchItem[] Ranking(SearchItem[] searchResult)
-    {
-
-        return searchResult.OrderBy(x => x.Score).ToArray();
     }
 }

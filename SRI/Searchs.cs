@@ -5,46 +5,24 @@ namespace SRI;
 
 public class Weight : IWeight
 {
-    private int InvFrec;
-
     public Weight(int item2)
     {
+        Frec = item2;
     }
 
     public int Frec { get; private set; }
+    public int ModalFrec { get; private set; }
+    public int DocsLength { get; private set; }
+    public int InvFrec { get; private set; }
 
-    public double GetWeight(int ModalFrec, int DocsLength) => Frec / ModalFrec * Math.Log(DocsLength / InvFrec);
-
-    public bool UpdateWeight(int InvFrec)
+    public void Update(int ModalFrec, int DocsLength, int InvFrec)
     {
-        if (this.InvFrec == InvFrec) return false;
+        this.ModalFrec = ModalFrec;
+        this.DocsLength = DocsLength;
         this.InvFrec = InvFrec;
-        return true;
     }
-}
 
-/// <summary>
-/// Representa un vector en el modelo de SRI
-/// </summary>
-/// <typeparam name="K">tipo de llave de dicho vector</typeparam>
-/// <typeparam name="T">tipo de valor que le corresponde a una llave</typeparam>
-public class SRIVector<K, T> : ISRIVector<K, T> where K : notnull
-{
-    Dictionary<K, T> storage;
-    public T this[K index] => storage[index];
-
-    public SRIVector(IEnumerable<KeyValuePair<K, T>> result) => storage = new Dictionary<K, T>(result);
-
-    public int Count => storage.Count;
-
-
-    public IEnumerator<T> GetEnumerator() => storage.Values.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => storage.Values.GetEnumerator();
-
-    public IEnumerable<K> GetKeys() => storage.Keys;
-
-    public bool ContainsKey(K item1) => storage.ContainsKey(item1);
+    public double GetWeight() => Frec / ModalFrec * Math.Log(DocsLength / InvFrec);
 }
 
 /// <summary>
@@ -90,10 +68,10 @@ public class SearchResult : ISearchResult, IEnumerable<SearchItem>
 
     private SearchItem[] items;
 
-    public SearchResult(SearchItem[] items, string suggestion="")
+    public SearchResult(SearchItem[] items, string suggestion = "")
     {
         if (items == null) throw new ArgumentNullException("items");
-        
+
         this.items = items;
         this.Suggestion = suggestion;
     }
