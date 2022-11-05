@@ -69,7 +69,6 @@
     private string query = "";
     private string corpus_path = "";
     private ISearchResult ? result;
-    private IProcesedCorpus ? corpus;
     private IResult<string,string,int> ? processed_query; 
     private bool add_corpus_path=true;
     private bool vectorial = true;
@@ -146,12 +145,12 @@
         {
             @* processed_query = new ProcesedDocument(query); *@
 
-            if(corpus !=null && processed_query != null)
+            if(processed_query != null)
             {
                 if(vectorial)
                 {
-                    ISRIModel<string,string> model = new VSM(corpus); 
-                    result = new SearchResult(model.GetSearchItems(processed_query)); 
+                    @* ISRIModel<string,string> model = new VSM();  *@
+                    @* result = new SearchResult(model.GetSearchItems(processed_query));  *@
                 }
                 @* if(boolean) 
                 {
