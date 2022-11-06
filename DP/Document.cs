@@ -1,15 +1,25 @@
+namespace DP;
+
 using System.Collections;
 using DP.Interface;
+
+public enum stateDoc
+{
+    changed,
+    deleted,
+    notchanged
+}
 
 public class Document : IDocument
 {
     private int maxSnippetSize;
+    private DateTime modifiedDateTime;
 
     public Document(string id, int maxSnippetSize = 30)
     {
         Id = id;
         this.maxSnippetSize = maxSnippetSize;
-        ModifiedDateTime = File.GetLastWriteTime(id);
+        modifiedDateTime = default(DateTime);
         Name = id.Reverse().TakeWhile(x => x != '\\').Reverse();
     }
 
@@ -17,14 +27,14 @@ public class Document : IDocument
 
     public IEnumerable<char> Name { get; private set; }
 
-    public DateTime ModifiedDateTime { get; private set; }
+    public int ModalFrec { get; set; }
 
     private IEnumerable<char> GetChars(StreamReader reader)
     {
-        while(!reader.EndOfStream)
+        while (!reader.EndOfStream)
             yield return char.ToLower((char)reader.Read());
     }
-    
+
     private IEnumerable<char> GetEnumerable()
     {
         StreamReader reader = new StreamReader(Id);
@@ -41,7 +51,17 @@ public class Document : IDocument
         reader.Close();
     }
 
-    public IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
+    public stateDoc GetState()
+    {
+        try 
+        { 
+            return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(Id))) ? stateDoc.notchanged : stateDoc.changed; 
+        } catch { }
+        return stateDoc.deleted;
+    }
 
+    public void UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(Id);
+
+    public IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerable().GetEnumerator();
 }

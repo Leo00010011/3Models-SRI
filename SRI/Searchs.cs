@@ -3,28 +3,26 @@ using SRI.Interface;
 
 namespace SRI;
 
-/// <summary>
-/// Representa un vector en el modelo de SRI
-/// </summary>
-/// <typeparam name="K">tipo de llave de dicho vector</typeparam>
-/// <typeparam name="T">tipo de valor que le corresponde a una llave</typeparam>
-public class SRIVector<K, T> : ISRIVector<K, T> where K : notnull
+public class Weight : IWeight
 {
-    Dictionary<K, T> storage;
-    public T this[K index] => storage[index];
+    public Weight(int item2)
+    {
+        Frec = item2;
+    }
 
-    public SRIVector(IEnumerable<KeyValuePair<K, T>> result) => storage = new Dictionary<K, T>(result);
+    public int Frec { get; private set; }
+    public int ModalFrec { get; private set; }
+    public int DocsLength { get; private set; }
+    public int InvFrec { get; private set; }
 
-    public int Count => storage.Count;
+    public void Update(int ModalFrec, int DocsLength, int InvFrec)
+    {
+        this.ModalFrec = ModalFrec;
+        this.DocsLength = DocsLength;
+        this.InvFrec = InvFrec;
+    }
 
-
-    public IEnumerator<T> GetEnumerator() => storage.Values.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => storage.Values.GetEnumerator();
-
-    public IEnumerable<K> GetKeys() => storage.Keys;
-
-    public bool ContainsKey(K item1) => storage.ContainsKey(item1);
+    public double GetWeight() => Frec / ModalFrec * Math.Log(DocsLength / InvFrec);
 }
 
 /// <summary>
@@ -32,7 +30,7 @@ public class SRIVector<K, T> : ISRIVector<K, T> where K : notnull
 /// </summary>
 public class SearchItem
 {
-    public SearchItem(string URL, string title, string snippet, double score)
+    public SearchItem(string URL, IEnumerable<char> title, IEnumerable<char> snippet, double score)
     {
         this.URL = URL;
         this.Title = title;
@@ -48,12 +46,12 @@ public class SearchItem
     /// <summary>
     /// Título del documento recuperado
     /// </summary>
-    public string Title { get; private set; }
+    public IEnumerable<char> Title { get; private set; }
 
     /// <summary>
     /// Pequeña representación del documento recuperado
     /// </summary>
-    public string Snippet { get; private set; }
+    public IEnumerable<char> Snippet { get; private set; }
 
     /// <summary>
     /// Peso del documento según el modelo empleado
@@ -70,10 +68,10 @@ public class SearchResult : ISearchResult, IEnumerable<SearchItem>
 
     private SearchItem[] items;
 
-    public SearchResult(SearchItem[] items, string suggestion="")
+    public SearchResult(SearchItem[] items, string suggestion = "")
     {
         if (items == null) throw new ArgumentNullException("items");
-        
+
         this.items = items;
         this.Suggestion = suggestion;
     }
