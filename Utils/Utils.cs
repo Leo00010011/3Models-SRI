@@ -66,7 +66,7 @@ public static class Parser
         int tl=0;
         int count = 0;
         int title_match_count=0;
-        char[] matching_machine = new char[]{'S', 'u','b','j','e','c','t',':',' '};
+        char[] matching_machine = new char[]{'s', 'u','b','j','e','c','t',':',' '};
         IEnumerator<char> file_enumerator = file.GetEnumerator();
 
         while(file_enumerator.MoveNext())
