@@ -39,7 +39,7 @@ public interface ISRIModel<D, T> where T: notnull where D: notnull
     /// </summary>
     /// <param name="query">consulta realizada al corpus del modelo</param>
     /// <returns>retorna un array de SearchItem que representa los documentos recuperados</returns>
-    SearchItem[] GetSearchItems(IDictionary<T, double> query);
+    SearchItem[] GetSearchItems(IDictionary<T, double> query, int snippetLen);
 
     /// <summary>
     /// Este método se utiliza para comparar cuán semejantes son dos documentos dentro

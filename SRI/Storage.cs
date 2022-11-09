@@ -37,6 +37,7 @@ public class VSMStorage : IStorage<IDocument, string, IWeight>
     public VSMStorage(IEnumerable<IDocument>? corpus)
     {
         weightMatrix = new Dictionary<IDocument, (IDictionary<string, IWeight>, int)>();
+        InvFrecTerms = new Dictionary<string, int>();
         if (corpus is null) return;
 
         foreach (var item in corpus)

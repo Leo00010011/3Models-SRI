@@ -12,11 +12,11 @@ public abstract class SRIModel<D, T> : ISRIModel<D, T>, ICollection<IDocument> w
     public virtual int Count => storage!.Count;
     public bool IsReadOnly => true;
 
-    public virtual SearchItem[] GetSearchItems(IDictionary<T, double> query)
+    public virtual SearchItem[] GetSearchItems(IDictionary<T, double> query, int snippetLen)
     {
         storage!.UpdateDocs(); /*analizar si es null*/ int count = 0; SearchItem[] result = new SearchItem[storage.Count];
         foreach (var item in storage)
-            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(), SimilarityRate(query, storage[item]));
+            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, storage[item]));
         return result;
     }
 

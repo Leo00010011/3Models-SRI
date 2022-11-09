@@ -44,16 +44,14 @@ public class ParsedInfo
     public int TitleInit {get; private set;}
     public int TitleLen {get; private set;}
     public int TextInit {get; private set;}
-    public int TextLen {get; private set;}
 
-    public ParsedInfo(int si,int sl, int ti, int tl, int tei, int tel)
+    public ParsedInfo(int si,int sl, int ti, int tl, int tei)
     {
         SnippetInit=si;
         SnippetLen=sl;
         TitleInit=ti;
         TitleLen=tl;
         TextInit=tei;
-        TextLen=tel;
     }
 
 }
@@ -82,8 +80,7 @@ public static class Parser
         } 
         while(file_enumerator.MoveNext() && file_enumerator.Current != '\n') count++;
         tl = (count++)-ti;
-        while(file_enumerator.MoveNext()) count++;
         int si = ti+tl +2;
-        return new ParsedInfo(si,Math.Min(300, count- si),ti,tl,ti,count - ti);
+        return new ParsedInfo(si,-1,ti,tl,ti);
     }
 }
