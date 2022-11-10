@@ -12,27 +12,29 @@ public enum stateDoc
 
 public class Document : IDocument
 {
-    private ParsedInfo info;
+    private ParsedInfo? info;
     private DateTime modifiedDateTime;
+    private Func<IEnumerable<char>, ParsedInfo> parser;
 
-    public Document(string id, Func<IEnumerable<char>,ParsedInfo> parser)
+    public Document(string id, Func<IEnumerable<char>, ParsedInfo> parser)
     {
         Id = id;
         modifiedDateTime = default(DateTime);
-        this.info = parser(this);
+        this.parser = parser;
     }
 
     public string Id { get; private set; }
 
-    public IEnumerable<char> Name 
-    { 
+    public IEnumerable<char> Name
+    {
         get
         {
+            if (info is null) info = parser(this);
             StreamReader reader = new StreamReader(Id);
             foreach (var item in GetChars(reader).Skip(info.TitleInit).Take(info.TitleLen))
                 yield return item;
             reader.Close();
-        } 
+        }
     }
 
     private IEnumerable<char> GetChars(StreamReader reader)
@@ -51,6 +53,7 @@ public class Document : IDocument
 
     public IEnumerable<char> GetSnippet(int snippetLen)
     {
+        if (info is null) info = parser(this);
         StreamReader reader = new StreamReader(Id);
         int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
         foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
@@ -60,10 +63,11 @@ public class Document : IDocument
 
     public stateDoc GetState()
     {
-        try 
-        { 
-            return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(Id))) ? stateDoc.notchanged : stateDoc.changed; 
-        } catch { }
+        try
+        {
+            return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(Id))) ? stateDoc.notchanged : stateDoc.changed;
+        }
+        catch { }
         return stateDoc.deleted;
     }
 
