@@ -20,8 +20,6 @@ public interface IDocument : IEnumerable<char>
 
     void UpdateDateTime();
 
-    int ModalFrec { get; }
-
     IEnumerable<char> GetSnippet(int snippetLen);
 }
 

@@ -3,26 +3,114 @@ using SRI.Interface;
 
 namespace SRI;
 
-public class Weight : IWeight
+public class QueryVSMWeight : IWeight
 {
-    public Weight(int item2)
+    public double frec;
+    public double modalFrec;
+
+    public QueryVSMWeight(double frec, double modalFrec)
     {
-        Frec = item2;
+        this.frec = frec;
+        this.modalFrec = modalFrec;
     }
 
-    public int Frec { get; private set; }
-    public int ModalFrec { get; private set; }
-    public int DocsLength { get; private set; }
-    public int InvFrec { get; private set; }
+    public double Weight => frec / modalFrec;
+}
 
-    public void Update(int ModalFrec, int DocsLength, int InvFrec)
+public class VSMWeight : IWeight
+{
+    private double frec;
+
+    public VSMWeight(double frec)
     {
-        this.ModalFrec = ModalFrec;
-        this.DocsLength = DocsLength;
-        this.InvFrec = InvFrec;
+        this.frec = frec;
     }
 
-    public double GetWeight() => Frec / ModalFrec * Math.Log(DocsLength / InvFrec);
+    public double Weight { get; private set; }
+
+    public void Update(double modalFrec, double docsLength, double invFrec) => Weight = frec / modalFrec * Math.Log(docsLength / invFrec);
+}
+
+public class SRIVectorLinked<K, V> : ISRIVector<K, V> where K : notnull
+{
+    LinkedList<(K, V)> vector;
+
+    public SRIVectorLinked() => this.vector = new LinkedList<(K, V)>();
+
+    public V this[K index]
+    {
+        get
+        {
+            try { return vector.First(x => object.Equals(x.Item1, index)).Item2; }
+            catch (System.Exception) { throw new IndexOutOfRangeException(); }
+        }
+        set
+        {
+            vector.Find(vector.First(x => object.Equals(x.Item1, index)))!.Value = (index, value);
+        }
+    }
+
+    public int Count => vector.Count;
+
+    public bool IsReadOnly => false;
+
+    public void Add((K, V) item) => vector.AddLast(item);
+
+    public void Add(K key, V value) => vector.AddLast((key, value));
+
+    public void Clear() => vector.Clear();
+
+    public bool Contains((K, V) item) => vector.Contains(item);
+
+    public bool ContainsKey(K Key)
+    {
+        try
+        {
+            vector.First(x => object.Equals(x.Item1, Key));
+            return true;
+        }
+        catch { return false; }
+    }
+
+    public void CopyTo((K, V)[] array, int arrayIndex) => vector.CopyTo(array, arrayIndex);
+
+    public bool Remove((K, V) item) => vector.Remove(item);
+
+    public IEnumerator<(K, V)> GetEnumerator() => vector.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public class SRIVectorDic<K, V> : ISRIVector<K, V> where K : notnull
+{
+    Dictionary<K, V> vector;
+
+    public SRIVectorDic() => this.vector = new Dictionary<K, V>();
+
+    public V this[K index] { get { return vector[index]; } set { vector[index] = value; } }
+
+    public int Count => vector.Count;
+
+    public bool IsReadOnly => false;
+
+    public void Add((K, V) item) => vector.Add(item.Item1, item.Item2);
+    public void Add(K key, V value) => vector.Add(key, value);
+
+    public void Clear() => vector.Clear();
+
+    public bool Contains((K, V) item) => vector.ContainsKey(item.Item1) && object.Equals(vector[item.Item1], item.Item2);
+
+    public bool ContainsKey(K key) => vector.ContainsKey(key);
+
+    public void CopyTo((K, V)[] array, int arrayIndex) => throw new NotImplementedException();
+
+    public bool Remove((K, V) item) => vector.Remove(item.Item1);
+
+    public bool Remove(K key) => vector.Remove(key);
+
+    public IEnumerator<(K, V)> GetEnumerator() => vector.Select(x => (x.Key, x.Value)).GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 /// <summary>

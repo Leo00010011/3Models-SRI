@@ -1,8 +1,11 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using Utils;
-using SRI;
+using System;
+using System.Diagnostics;
 using DP;
 using DP.Interface;
+using SRI;
+using SRI.Interface;
+using Utils;
 
 namespace Test;
 public static class TestingMethods
@@ -27,9 +30,25 @@ public class Program
         }
     }
 
+    public static IEnumerable<string> ReadAllFiles(string path)
+    {
+        foreach (var item in Directory.EnumerateFiles(path))
+        {
+            yield return item;
+        }
+        foreach (var docs in Directory.EnumerateDirectories(path))
+        {
+            foreach (var item in ReadAllFiles(docs))
+            {
+                yield return item;
+            }
+        }
+    }
+
     public static void Main(string[] args)
     {
-        string[] docsID = Directory.GetFiles(".\\content\\20 Newsgroups\\20news-18828\\20news-18828\\alt.atheism");
+        Stopwatch cloc = new Stopwatch();
+        IEnumerable<string> docsID = ReadAllFiles(".\\content\\20 Newsgroups\\20news-18828\\20news-18828");
 
         LinkedList<IDocument> docs = new LinkedList<IDocument>();
         foreach (var item in docsID)
@@ -38,8 +57,48 @@ public class Program
             docs.AddLast(new Document(item, info));
         }
 
-        
+        cloc.Start();
+        ReadTest(docs);
+        cloc.Stop();
+
+        Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
+        cloc.Reset();
+
+        cloc.Start();
         VSM vectorial = new VSM(docs);
+        cloc.Stop();
+
+        Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
+        cloc.Reset();
+
+        SRIVectorDic<string, IWeight> query = new SRIVectorDic<string, IWeight>();
+
+        QueryVSMWeight hoW = new QueryVSMWeight(2, 2);
+        query.Add("house", hoW);
+
+        cloc.Start();
+        SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(query, 30));
+        cloc.Stop();
+
+        Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+
+        foreach (var item in results.Select(x => x.Title))
+        {
+            System.Console.WriteLine(item);
+        }
+    }
+
+    private static char ReadTest(IEnumerable<IDocument> docs)
+    {
+        char a = '0';
+        foreach (var doc in docs)
+        {
+            foreach (var item in doc)
+            {
+                a = item;
+            }
+        }
+        return a;
     }
 }
 
