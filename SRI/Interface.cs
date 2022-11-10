@@ -89,6 +89,8 @@ public interface ISRIVector<K, V> : ICollection<(K, V)>, IEnumerable<(K, V)>
         get; set;
     }
 
+    // ISRIVector<K, V> CreateVector(IEnumerable<char> docs);
+
     public void Add(K key, V value);
     
     bool ContainsKey(K Key);
