@@ -2,6 +2,20 @@
 
 public static class Utils
 {
+    public static IEnumerable<string> ReadAllFiles(string path)
+    {
+        foreach (var item in Directory.EnumerateFiles(path))
+        {
+            yield return item;
+        }
+        foreach (var docs in Directory.EnumerateDirectories(path))
+        {
+            foreach (var item in ReadAllFiles(docs))
+            {
+                yield return item;
+            }
+        }
+    }
     private static HashSet<string>? stopWords;
 
     public static HashSet<string> GetStopWords()

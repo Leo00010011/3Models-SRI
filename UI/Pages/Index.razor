@@ -46,7 +46,7 @@
 @foreach (var item in result) {
     <li>
         <div class="item">
-            <a class="title" href="#"> @item.Title</a>
+            <a class="title" href=@item.URL> @item.Title</a>
             <p>... @item.Snippet ...</p>
         </div>
     </li>
@@ -69,6 +69,8 @@
     private string query = "";
     private string corpus_path = "";
     private ISearchResult ? result;
+    private IEnumerable<string> directory;
+    private string current_path;
     private IResult<string,string,int> ? processed_query; 
     private bool add_corpus_path=true;
     private bool vectorial = true;
@@ -113,8 +115,11 @@
     /// </summary>
     private void UpdateCorpus()
     {
-        @* corpus = UpdateCorpus(corpus_path); *@
-        add_corpus_path = false;
+        if(current_path != null)
+        {
+            directory = Utils.ReadAllFiles(current_path);
+            add_corpus_path = false;
+        }
 
     }
      private void SetAddPath()
@@ -149,8 +154,8 @@
             {
                 if(vectorial)
                 {
-                    @* ISRIModel<string,string> model = new VSM();  *@
-                    @* result = new SearchResult(model.GetSearchItems(processed_query));  *@
+
+                    private ISRIModel<string,IDocument,(IWeight,int)> model = new VSM();
                 }
                 @* if(boolean) 
                 {

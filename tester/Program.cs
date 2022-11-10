@@ -48,13 +48,12 @@ public class Program
     public static void Main(string[] args)
     {
         Stopwatch cloc = new Stopwatch();
-        IEnumerable<string> docsID = ReadAllFiles(".\\content\\20 Newsgroups\\20news-18828\\20news-18828");
+        IEnumerable<string> docsID = ReadAllFiles("C:\\Users\\User\\Desktop\\Test Collections\\Test Collections\\20 Newsgroups\\20news-18828");
 
         LinkedList<IDocument> docs = new LinkedList<IDocument>();
         foreach (var item in docsID)
         {
-            ParsedInfo info = Parser.NewsgroupParser(item);
-            docs.AddLast(new Document(item, info));
+           docs.AddLast(new Document(item, Parser.NewsgroupParser));
         }
 
         cloc.Start();
