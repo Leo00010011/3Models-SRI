@@ -48,7 +48,7 @@ public class Program
     public static void Main(string[] args)
     {
         Stopwatch cloc = new Stopwatch();
-        IEnumerable<string> docsID = ReadAllFiles("C:\\Users\\User\\Desktop\\Test Collections\\Test Collections\\20 Newsgroups\\20news-18828");
+        IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
 
         LinkedList<IDocument> docs = new LinkedList<IDocument>();
         foreach (var item in docsID)
