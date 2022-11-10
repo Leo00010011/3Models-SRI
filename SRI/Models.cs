@@ -145,7 +145,7 @@ public class VSM : ICollection<IDocument>
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    public ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
+    public static ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
     {
         ProcesedDocument results = new ProcesedDocument(docs);
 

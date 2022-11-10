@@ -69,9 +69,8 @@
     private string query = "";
     private string corpus_path = "";
     private ISearchResult ? result;
-    private IEnumerable<string> directories;
-    private string current_path;
-    private IResult<string,string,int> ? processed_query; 
+    private IEnumerable<string> ? directories;
+    private string current_path ="";
     private bool add_corpus_path=true;
     private bool vectorial = true;
     private bool boolean;
@@ -146,34 +145,21 @@
     
     private void RunQuery() 
     {
-        if(!string.IsNullOrEmpty(query))
+        if(!string.IsNullOrEmpty(query) && directories!=null)
         {
-            @* processed_query = new ProcesedDocument(query); *@
-
-            if(processed_query != null)
+            if(vectorial)
             {
-                if(vectorial)
+                
+                LinkedList<IDocument> docs = new LinkedList<IDocument>();
+                foreach (var item in directories)
                 {
-                    LinkedList<IDocument> docs = new LinkedList<IDocument>();
-                    foreach (var item in directories)
-                    {
-                       docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
-                    }
-                    VSM vectorial = new VSM(docs);
-                     
+                   docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
                 }
-                @* if(boolean) 
-                {
+                VSM vectorial = new VSM(docs);
+                result = new SearchResult(vectorial.Ranking(vectorial.GetSearchItems(VSM.CreateQuery(query),300)),""); 
+            }
+            else result= null;
 
-                add code for boolean research model
-                }
-                if(other) 
-                {
-
-                add code for other research model 
-                }*@
-
-            } 
         }
 
     }
