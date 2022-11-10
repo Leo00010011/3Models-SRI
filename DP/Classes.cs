@@ -15,11 +15,11 @@ public class Document : IDocument
     private ParsedInfo info;
     private DateTime modifiedDateTime;
 
-    public Document(string id, ParsedInfo info)
+    public Document(string id, Func<IEnumerable<char>,ParsedInfo> parser)
     {
         Id = id;
-        this.info = info;
         modifiedDateTime = default(DateTime);
+        this.info = parser(this);
     }
 
     public string Id { get; private set; }
