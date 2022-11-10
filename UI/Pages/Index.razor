@@ -69,7 +69,7 @@
     private string query = "";
     private string corpus_path = "";
     private ISearchResult ? result;
-    private IEnumerable<string> directory;
+    private IEnumerable<string> directories;
     private string current_path;
     private IResult<string,string,int> ? processed_query; 
     private bool add_corpus_path=true;
@@ -117,7 +117,7 @@
     {
         if(current_path != null)
         {
-            directory = Utils.ReadAllFiles(current_path);
+            directories = Utils.ReadAllFiles(current_path);
             add_corpus_path = false;
         }
 
@@ -154,8 +154,13 @@
             {
                 if(vectorial)
                 {
-
-                    private ISRIModel<string,IDocument,(IWeight,int)> model = new VSM();
+                    LinkedList<IDocument> docs = new LinkedList<IDocument>();
+                    foreach (var item in directories)
+                    {
+                       docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
+                    }
+                    VSM vectorial = new VSM(docs);
+                     
                 }
                 @* if(boolean) 
                 {
