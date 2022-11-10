@@ -1,6 +1,8 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Utils;
+using SRI;
 using DP;
+using DP.Interface;
 
 namespace Test;
 public static class TestingMethods
@@ -24,12 +26,20 @@ public class Program
             }
         }
     }
+
     public static void Main(string[] args)
     {
-        Console.WriteLine("###############################################################################");
-        IEnumerable<char> doc = new Document("C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\20 Newsgroups\\20news-18828\\alt.atheism\\49960");
-        var result = Utils.Parser.NewsgroupParser(doc);
-        Print(doc.Skip(result.TitleInit).Take(result.TitleLen));
+        string[] docsID = Directory.GetFiles(".\\content\\20 Newsgroups\\20news-18828\\20news-18828\\alt.atheism");
+
+        LinkedList<IDocument> docs = new LinkedList<IDocument>();
+        foreach (var item in docsID)
+        {
+            ParsedInfo info = Parser.NewsgroupParser(item);
+            docs.AddLast(new Document(item, info));
+        }
+
+        
+        VSM vectorial = new VSM(docs);
     }
 }
 
@@ -42,5 +52,3 @@ public class Program
 // System.Console.WriteLine(a.TitleLen);
 // System.Console.WriteLine(a.TextLen);
 // System.Console.WriteLine(a.SnippetLen);
-
-

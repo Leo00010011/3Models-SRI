@@ -22,7 +22,7 @@ public interface IDocument : IEnumerable<char>
 
     int ModalFrec { get; }
 
-    IEnumerable<char> GetSnippet();
+    IEnumerable<char> GetSnippet(int snippetLen);
 }
 
 public interface IResult<TValue, KKey, MPiece> : IEnumerable<(KKey, MPiece)>

@@ -12,20 +12,28 @@ public enum stateDoc
 
 public class Document : IDocument
 {
-    private int maxSnippetSize;
+    private ParsedInfo info;
     private DateTime modifiedDateTime;
 
-    public Document(string id, int maxSnippetSize = 30)
+    public Document(string id, ParsedInfo info)
     {
         Id = id;
-        this.maxSnippetSize = maxSnippetSize;
+        this.info = info;
         modifiedDateTime = default(DateTime);
-        Name = id.Reverse().TakeWhile(x => x != '\\').Reverse();
     }
 
     public string Id { get; private set; }
 
-    public IEnumerable<char> Name { get; private set; }
+    public IEnumerable<char> Name 
+    { 
+        get
+        {
+            StreamReader reader = new StreamReader(Id);
+            foreach (var item in GetChars(reader).Skip(info.TitleInit).Take(info.TitleLen))
+                yield return item;
+            reader.Close();
+        } 
+    }
 
     public int ModalFrec { get; set; }
 
@@ -43,10 +51,11 @@ public class Document : IDocument
         reader.Close();
     }
 
-    public IEnumerable<char> GetSnippet()
+    public IEnumerable<char> GetSnippet(int snippetLen)
     {
         StreamReader reader = new StreamReader(Id);
-        foreach (var item in GetChars(reader).Take(maxSnippetSize))
+        int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
+        foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
             yield return item;
         reader.Close();
     }
