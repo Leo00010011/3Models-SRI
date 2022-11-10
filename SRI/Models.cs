@@ -150,11 +150,10 @@ public class VSM : ICollection<IDocument>
         ProcesedDocument results = new ProcesedDocument(docs);
 
         SRIVectorLinked<string, IWeight> query = new SRIVectorLinked<string, IWeight>();
-        foreach ((string, int) item in results)
-        {
-            
-        }
+        int modalFrec = results.MaxBy(x => x.Item2).Item2;
 
+        foreach ((string, int) item in results)
+            query.Add(item.Item1, new QueryVSMWeight(item.Item2, modalFrec));
         return query;
     }
 }
