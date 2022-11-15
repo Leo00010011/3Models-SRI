@@ -138,6 +138,8 @@ public class SearchItem
     /// </summary>
     public IEnumerable<char> Title { get; private set; }
 
+    public static string Convert(IEnumerable<char> str) => string.Concat(str);
+
     /// <summary>
     /// Pequeña representación del documento recuperado
     /// </summary>

@@ -119,14 +119,14 @@ public class VSM : ICollection<IDocument>
             queryscore += Math.Pow(item.Item2.Weight, 2);
             foreach (var item1 in storage[item.Item1])
             {
-                score[item1.Item2.Item2] += item.Item2.Weight * item1.Item2.Item1.Weight;
+                score[item1.Item1] += item.Item2.Weight * item1.Item2.Weight;
             }
         }
         queryscore = Math.Sqrt(queryscore);
 
-        foreach (var item in this)
+        foreach (var item in storage.GetAllDocs())
         {
-            result[count] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), score[count++] / queryscore);
+            result[count] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), score[count++] / (queryscore * item.Item2));
         }
         return result;
     }
@@ -141,7 +141,7 @@ public class VSM : ICollection<IDocument>
     public void CopyTo(IDocument[] array, int arrayIndex) => storage!.CopyTo(array, arrayIndex);
     public bool Remove(IDocument item) => storage!.Remove(item);
 
-    public IEnumerator<IDocument> GetEnumerator() => storage!.GetAllDocs().GetEnumerator();
+    public IEnumerator<IDocument> GetEnumerator() => storage!.GetAllDocs().Select(x => x.Item1).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
