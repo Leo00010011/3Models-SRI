@@ -74,27 +74,61 @@ public static class Parser
 {
     public static ParsedInfo NewsgroupParser(IEnumerable<char> file)
     {
-        int ti=0;
-        int tl=0;
         int count = 0;
-        int title_match_count=0;
         char[] matching_machine = new char[]{'s', 'u','b','j','e','c','t',':',' '};
         IEnumerator<char> file_enumerator = file.GetEnumerator();
-
-        while(file_enumerator.MoveNext())
-        {   
-            if(title_match_count >= matching_machine.Length)
-            {
-                ti = count++;
-                break;
-            }
-            if(file_enumerator.Current==matching_machine[title_match_count]) title_match_count++;
-            else title_match_count=0;
-            count++;
-        } 
+        int ti = Parser.MatchIndex(file_enumerator, matching_machine,out count,count);
         while(file_enumerator.MoveNext() && file_enumerator.Current != '\n') count++;
-        tl = (count++)-ti;
+        int  tl = (count++)-ti;
         int si = ti+tl +2;
         return new ParsedInfo(si,-1,ti,tl,ti);
     }
+
+    public static ParsedInfo CranParser(IEnumerable<char> file)
+    {
+        int count = 0;
+        char[] matching_title = new char[]{'.', 't','\n'};
+        char[] matching_end_title = new char[]{'.', 'a','\n'};
+        char[] matching_text = new char[]{'.', 'w','\n'};
+        IEnumerator<char> file_enumerator = file.GetEnumerator();
+        int ti= Parser.MatchIndex(file_enumerator,matching_title,out count,count);
+        int tl= Parser.MatchIndex(file_enumerator,matching_end_title,out count,count) - ti -3;
+        int texi = Parser.MatchIndex(file_enumerator,matching_text,out count,count);
+        return new ParsedInfo(texi, -1, ti, tl, texi);
+
+    }
+    
+    public static ParsedInfo ReutersParser(IEnumerable<char> file)
+    {
+        int count = 0;
+        char[] matching_title = new char[]{'<', 't','i','t','l','e','>'};
+        char[] matching_end_title = new char[]{'<','/', 't','i','t','l','e','>'};
+        char[] matching_text = new char[]{'<', 'b','o','d','y','>'};
+        IEnumerator<char> file_enumerator = file.GetEnumerator();
+        int ti= Parser.MatchIndex(file_enumerator,matching_title,out count,count);
+        int tl= Parser.MatchIndex(file_enumerator,matching_end_title,out count,count) - ti -8;
+        int texi = Parser.MatchIndex(file_enumerator,matching_text,out count,count);
+        return new ParsedInfo(texi, -1, ti, tl, texi);
+
+    }
+
+    private static int MatchIndex(IEnumerator<char> file_enumerator, char[] matching,out int current_index, int initial)
+    {
+        current_index = initial;
+        int match_count = 0;
+        int index_result = 0;
+        while(file_enumerator.MoveNext())
+        {   
+            if(match_count >= matching.Length)
+            {
+                index_result = current_index++;
+                break;
+            }
+            if(file_enumerator.Current==matching[match_count]) match_count++;
+            else match_count=0;
+            current_index++;
+        }
+        return index_result;
+    }
+
 }
