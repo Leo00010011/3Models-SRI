@@ -174,20 +174,18 @@ public class VSMStorage_docterm : Storage<IDocument, string, IWeight>, IStorage<
 
 #endregion
 
-public class VSMStorage : Storage<string, IDocument, (IWeight, int)>, IStorage<string, IDocument, (IWeight, int)>
+public class VSMStorage : Storage<string, int, IWeight>, IStorage<string, int, IWeight>
 {
-    private SRIVectorDic<string, SRIVectorLinked<IDocument, (IWeight, int)>> weightMatrix;
-    private IEnumerable<IDocument>? corpus;
-    private List<int> FrecModal;
+    private SRIVectorDic<string, SRIVectorDic<int, IWeight>> weightMatrix;
+    private List<(int, IDocument, double)> FrecModal;
     private bool needUpdate;
 
-    public override ISRIVector<IDocument, (IWeight, int)> this[string index] => GetDocVector(index);
+    public override ISRIVector<int, IWeight> this[string index] => GetDocVector(index);
 
     public VSMStorage(IEnumerable<IDocument>? corpus)
     {
-        weightMatrix = new SRIVectorDic<string, SRIVectorLinked<IDocument, (IWeight, int)>>();
-        FrecModal = new List<int>();
-        this.corpus = corpus;
+        weightMatrix = new SRIVectorDic<string, SRIVectorDic<int, IWeight>>();
+        FrecModal = new List<(int, IDocument, double)>();
         if (corpus is null) return;
 
         foreach (var item in corpus)
@@ -201,17 +199,22 @@ public class VSMStorage : Storage<string, IDocument, (IWeight, int)>, IStorage<s
 
     public override void UpdateDocs()
     {
-        foreach (var item in corpus!.Select((x, y) => (x, y)))
+        stateDoc state = stateDoc.notchanged;
+        for (int i = 0; i < FrecModal.Count; i++)
         {
-            switch (item.Item1.GetState())
+            stateDoc stateDoc = FrecModal[i].Item2.GetState();
+            state = (stateDoc is stateDoc.changed || ((state is stateDoc.changed || state is stateDoc.deleted) && 
+                   !(stateDoc is stateDoc.deleted))) ? stateDoc.changed : stateDoc;
+            switch (state)
             {
                 case stateDoc.changed:
-                    FrecModal.Remove(item.Item2);
-                    GenWeightTerms(item.Item1, in item.Item2);
+                    IDocument doc = FrecModal[i].Item2;
+                    FrecModal.Remove(FrecModal[i]);
+                    GenWeightTerms(doc, in i);
                     break;
                 case stateDoc.deleted:
-                    FrecModal.Remove(item.Item2);
-                    Remove(item.Item1);
+                    Remove(FrecModal[i].Item2);
+                    i--;
                     break;
                 case stateDoc.notchanged:
                     break;
@@ -223,13 +226,13 @@ public class VSMStorage : Storage<string, IDocument, (IWeight, int)>, IStorage<s
         UpdateAllWeight();
     }
 
-    public override ISRIVector<IDocument, (IWeight, int)> GetDocVector(string index) => GetInfoDoc(index);
+    public override ISRIVector<int, IWeight> GetDocVector(string index) => GetInfoDoc(index);
 
-    public override ISRIVector<string, (IWeight, int)> GetTermVector(IDocument doc)
+    public override ISRIVector<string, IWeight> GetTermVector(int doc)
     {
         if (weightMatrix is null) throw new ArgumentNullException("hubo un error inesperado, la matriz de pesos es null");
 
-        SRIVectorDic<string, (IWeight, int)> result = new SRIVectorDic<string, (IWeight, int)>();
+        SRIVectorDic<string, IWeight> result = new SRIVectorDic<string, IWeight>();
         foreach (var item in weightMatrix)
         {
             try
@@ -242,7 +245,7 @@ public class VSMStorage : Storage<string, IDocument, (IWeight, int)>, IStorage<s
         return result;
     }
 
-    public ISRIVector<IDocument, (IWeight, int)> GetInfoDoc(string index) => weightMatrix[index];
+    public ISRIVector<int, IWeight> GetInfoDoc(string index) => weightMatrix[index];
 
     private void GenWeightTerms(IDocument doc, in int numdoc)
     {
@@ -256,24 +259,33 @@ public class VSMStorage : Storage<string, IDocument, (IWeight, int)>, IStorage<s
             ModalFrec = Math.Max(ModalFrec, item.Item2);
             if (!weightMatrix!.ContainsKey(item.Item1))
             {
-                var docs = new SRIVectorLinked<IDocument, (IWeight, int)>();
-                docs.Add((doc, (new VSMWeight(item.Item2), numdoc)));
+                var docs = new SRIVectorDic<int, IWeight>();
+                docs.Add((numdoc, new VSMWeight(item.Item2)));
                 weightMatrix!.Add(item.Item1, docs);
             }
             else
-                weightMatrix![item.Item1].Add((doc, (new VSMWeight(item.Item2), numdoc)));
+                weightMatrix![item.Item1].Add((numdoc, new VSMWeight(item.Item2)));
         }
 
-        FrecModal.Add(ModalFrec);
+        FrecModal.Insert(numdoc, (ModalFrec, doc, 0));
         doc.UpdateDateTime();
     }
 
     private void UpdateAllWeight()
     {
         if (!needUpdate) return;
+        double[] norma2 = new double[FrecModal.Count];
         foreach (var doc in weightMatrix)
+        {
             foreach (var item in doc.Item2)
-                (item.Item2.Item1 as VSMWeight)!.Update(FrecModal[item.Item2.Item2], FrecModal.Count, doc.Item2.Count);
+            {
+                (item.Item2 as VSMWeight)!.Update(FrecModal[item.Item1].Item1, FrecModal.Count, doc.Item2.Count);
+                norma2[item.Item1] += Math.Pow(item.Item2.Weight, 2);
+            }
+        }
+
+        for (int i = 0; i < norma2.Length; i++)
+            FrecModal[i] = (FrecModal[i].Item1, FrecModal[i].Item2, Math.Sqrt(norma2[i]));
         needUpdate = false;
     }
 
@@ -287,7 +299,7 @@ public class VSMStorage : Storage<string, IDocument, (IWeight, int)>, IStorage<s
 
     public override void Add(string item) => throw new NotImplementedException();
 
-    public override void Clear() => weightMatrix = new SRIVectorDic<string, SRIVectorLinked<IDocument, (IWeight, int)>>();
+    public override void Clear() => weightMatrix = new SRIVectorDic<string, SRIVectorDic<int, IWeight>>();
 
     public override bool Contains(string item) => throw new NotImplementedException();
 
@@ -301,7 +313,7 @@ public class VSMStorage : Storage<string, IDocument, (IWeight, int)>, IStorage<s
 
     public override bool Remove(string item) => throw new NotImplementedException();
 
-    public IEnumerable<IDocument> GetAllDocs() => corpus!;
+    public IEnumerable<(IDocument, double)> GetAllDocs() => FrecModal.Select(x => (x.Item2, x.Item3))!;
 
     public override IEnumerator<string> GetEnumerator() => weightMatrix!.Select(x => x.Item1).GetEnumerator();
 

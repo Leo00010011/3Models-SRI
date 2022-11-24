@@ -43,11 +43,12 @@
     }
 
 <ul class="results">
-@foreach (var item in result) {
+@foreach (var item in result.Take(15)) {
     <li>
+     
         <div class="item">
-            <a class="title" href=@item.URL> @item.Title</a>
-            <p>... @item.Snippet ...</p>
+            <a class="title" href=@item.URL>@SearchItem.Convert(item.Title)</a>
+            <p>... @SearchItem.Convert(item.Snippet) ...</p>
         </div>
     </li>
 }

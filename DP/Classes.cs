@@ -63,11 +63,7 @@ public class Document : IDocument
 
     public stateDoc GetState()
     {
-        try
-        {
-            return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(Id))) ? stateDoc.notchanged : stateDoc.changed;
-        }
-        catch { }
+        if (File.Exists(Id)) return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(Id))) ? stateDoc.notchanged : stateDoc.changed;
         return stateDoc.deleted;
     }
 

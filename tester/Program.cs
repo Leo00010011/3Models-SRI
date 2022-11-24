@@ -83,7 +83,7 @@ public class Program
 
         foreach (var item in results.Select(x => x.Title))
         {
-            System.Console.WriteLine(item);
+            System.Console.WriteLine(SearchItem.Convert(item));
         }
     }
 
