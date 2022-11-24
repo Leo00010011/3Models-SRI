@@ -64,7 +64,7 @@ public class Program
         cloc.Reset();
 
         cloc.Start();
-        VSM vectorial = new VSM(docs);
+        WMTermDoc vectorial = new WMTermDoc(docs);
         cloc.Stop();
 
         Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");

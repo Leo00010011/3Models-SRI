@@ -30,7 +30,7 @@ public interface IWeight
 /// </summary>
 /// <typeparam name="T">tipo de término en el modelo</typeparam>
 /// <typeparam name="D">tipo de documento en el modelo</typeparam>
-public interface ISRIModel<D, T, V> where T : notnull where D : notnull
+public interface ISRIModel<T1, T2, V, Q, D> : ICollection<D> where T1 : notnull where T2 : notnull where Q : notnull
 {
     /// <summary>
     /// Este método es el encargado de, a partir del peso de los documentos, 
@@ -38,7 +38,7 @@ public interface ISRIModel<D, T, V> where T : notnull where D : notnull
     /// </summary>
     /// <param name="query">consulta realizada al corpus del modelo</param>
     /// <returns>retorna un array de SearchItem que representa los documentos recuperados</returns>
-    SearchItem[] GetSearchItems(ISRIVector<T, V> query, int snippetLen = 30);
+    SearchItem[] GetSearchItems(ISRIVector<Q, V> query, int snippetLen = 30);
 
     /// <summary>
     /// Este método se utiliza para comparar cuán semejantes son dos documentos dentro
@@ -47,7 +47,7 @@ public interface ISRIModel<D, T, V> where T : notnull where D : notnull
     /// <param name="doc1">documento a comparar</param>
     /// <param name="doc2">documento a comparar</param>
     /// <returns>retorna un valor entre 0 y 1 como indicador de semejanza</returns>
-    double SimilarityRate(ISRIVector<T, V> doc1, ISRIVector<T, V> doc2);
+    double SimilarityRate(ISRIVector<T2, V> doc1, ISRIVector<T2, V> doc2);
 
     /// <summary>
     /// Dado una serie de documentos recuperados, estos se ordenan siguiendo el criterio
@@ -58,9 +58,9 @@ public interface ISRIModel<D, T, V> where T : notnull where D : notnull
     SearchItem[] Ranking(SearchItem[] searchResult);
 }
 
-public interface IStorage<D, T, V> : ICollection<D> where D : notnull where T : notnull
+public interface IStorage<T1, T2, V, D> : ICollection<D> where T1 : notnull where T2 : notnull
 {
-    ISRIVector<T, V> this[D index]
+    ISRIVector<T2, V> this[T1 index]
     {
         get;
     }
@@ -70,14 +70,14 @@ public interface IStorage<D, T, V> : ICollection<D> where D : notnull where T : 
     /// </summary>
     /// <param name="index">es el identificador de dicho término en el modelo</param>
     /// <returns>retorna un vector término</returns>
-    ISRIVector<D, V> GetTermVector(T index);
+    ISRIVector<T1, V> GetTermVector(T2 index);
 
     /// <summary>
     /// Este método se utiliza para selecionar un vector de documento específico
     /// </summary>
     /// <param name="index">es el identificador de dicho documento en el modelo</param>
     /// <returns>retorna un vector documento</returns>
-    ISRIVector<T, V> GetDocVector(D doc);
+    ISRIVector<T2, V> GetDocVector(T1 doc);
 
     void UpdateDocs();
 }
@@ -92,6 +92,6 @@ public interface ISRIVector<K, V> : ICollection<(K, V)>, IEnumerable<(K, V)>
     // ISRIVector<K, V> CreateVector(IEnumerable<char> docs);
 
     public void Add(K key, V value);
-    
+
     bool ContainsKey(K Key);
 }
