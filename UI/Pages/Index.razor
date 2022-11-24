@@ -155,8 +155,8 @@
                 {
                    docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
                 }
-                WMTermDoc vectorial = new WMTermDoc(docs);
-                result = new SearchResult(vectorial.Ranking(vectorial.GetSearchItems(WMTermDoc.CreateQuery(query),300)),""); 
+                VSMTermDoc vectorial = new VSMTermDoc(docs);
+                result = new SearchResult(vectorial.Ranking(vectorial.GetSearchItems(VSMTermDoc.CreateQuery(query),300)),""); 
             }
             else result= null;
 

@@ -142,3 +142,88 @@ public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDo
     }
 
 }
+
+public class BSMTermDoc: WMTermDoc, ISRIModel<string,int,int,string,IDocument>, ICollection<IDocument>
+{
+    private BooleanNode root;
+    public static ISRIVector<string, int> CreateQuery(IEnumerable<char> docs)
+    {
+        SRIVectorLinked<string, int> query = new SRIVectorLinked<string, int>();
+        List<TokenLexem> tokenized = new List<TokenLexem>();
+
+        string token ="";
+        foreach(char c in docs)
+        {
+                if( c== '<')
+                {   
+                    if(!string.IsNullOrEmpty(token))
+                    {
+                        query.Add(token,1); 
+                        tokenized.Add(TokenLexem.word);
+                    } 
+                    token = "<";
+                }
+                else if(c== '=')
+                {   
+                    if(token == "<") token= "<="; 
+                    else if(!string.IsNullOrEmpty(token))
+                    {   query.Add(token,1); 
+                        tokenized.Add(TokenLexem.word);
+                        token = "=";
+                    } 
+                }
+                else if(char.IsLetter(c) || char.IsNumber(c)) token+= c.ToString();
+                else
+                {
+                    if(c =='>')
+                    {
+                        if (token == "=") tokenized.Add(TokenLexem.implies);
+                        else if(token == "<=")  tokenized.Add(TokenLexem.double_implies);
+                        token ="";
+                    }
+                    if(!string.IsNullOrEmpty(token)){query.Add(token,1); tokenized.Add(TokenLexem.word); token="";}
+                    if (c== '&') tokenized.Add(TokenLexem.and);
+                    if(c == '|') tokenized.Add(TokenLexem.or);
+                    if(c == '^') tokenized.Add(TokenLexem.xor);
+                    if(c == '!') tokenized.Add(TokenLexem.not);
+                    if(c == '(') tokenized.Add(TokenLexem.opar);
+                    if(c == ')') tokenized.Add(TokenLexem.cpar);
+                }
+                
+        }
+        foreach (var item in tokenized)
+        {
+            System.Console.WriteLine(item);
+        }
+        //llamar metodo de construir AST
+        return query;
+    }
+    public SearchItem[] GetSearchItems(ISRIVector<string, int> query, int snippetLen = 30)
+    {
+        ((VSMStorageTermDoc)Storage!).UpdateDocs(); /*analizar si es null*/ 
+        SearchItem[] result = new SearchItem[Storage.Count];
+        bool[][] score = new bool[Storage.Count][] ;
+        int index = 0;
+        foreach (var item in query)
+        {
+            foreach (var item1 in ((VSMStorageTermDoc)Storage!)[item.Item1])
+            {
+                if(score[item1.Item1] == null) score[item1.Item1] = new bool[query.Count];
+                score[item1.Item1][index] = true;
+            }
+            index++;
+        }
+        index = 0;
+        foreach (var item in ((VSMStorageTermDoc)Storage).GetAllDocs())
+        {
+            // result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), score[index++]);
+        }
+        return result;
+    }
+    
+    public double SimilarityRate(ISRIVector<int, int> doc1, ISRIVector<int, int> doc2)
+    {
+        throw new NotImplementedException();
+    }
+}
+
