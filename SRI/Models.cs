@@ -5,48 +5,35 @@ using DP;
 using DP.Interface;
 using SRI.Interface;
 
-public abstract class SRIModel<D, T, V> : ISRIModel<D, T, V>, ICollection<D> where D : notnull where T : notnull
+public abstract class SRIModel<T1, T2, V, Q, D> : ISRIModel<T1, T2, V, Q, D>, ICollection<D> where T1 : notnull where T2 : notnull where Q : notnull
 {
+    protected virtual ICollection<D>? Storage { get; set; }
+
     public bool IsReadOnly => true;
 
-    public abstract int Count { get; }
+    public int Count => Storage!.Count;
 
-    public abstract SearchItem[] GetSearchItems(ISRIVector<T, V> query, int snippetLen);
+    public abstract SearchItem[] GetSearchItems(ISRIVector<Q, V> query, int snippetLen);
 
     public virtual SearchItem[] Ranking(SearchItem[] searchResult) => searchResult.OrderBy(x => x.Score).Reverse().ToArray();
-    public abstract double SimilarityRate(ISRIVector<T, V> doc1, ISRIVector<T, V> doc2);
+    public abstract double SimilarityRate(ISRIVector<T2, V> doc1, ISRIVector<T2, V> doc2);
 
-    public abstract void Add(D item);
-    public abstract void Clear();
-    public abstract bool Contains(D item);
-    public abstract void CopyTo(D[] array, int arrayIndex);
-    public abstract bool Remove(D item);
+    public virtual void Add(D item) => Storage!.Add(item);
+    public virtual void Clear() => Storage!.Clear();
+    public virtual bool Contains(D item) => Storage!.Contains(item);
+    public virtual void CopyTo(D[] array, int arrayIndex) => Storage!.CopyTo(array, arrayIndex);
+    public virtual bool Remove(D item) => Storage!.Remove(item);
 
-    public abstract IEnumerator<D> GetEnumerator();
+    public virtual IEnumerator<D> GetEnumerator() => Storage!.GetEnumerator();
+
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
-public class VSM_docterm : SRIModel<IDocument, string, IWeight>, ISRIModel<IDocument, string, IWeight>, ICollection<IDocument>
+public abstract class WModel<T1, T2, D> : SRIModel<T1, T2, IWeight, string, D>, ISRIModel<T1, T2, IWeight, string, D>, ICollection<D> where T1 : notnull where T2 : notnull
 {
-    protected Storage<IDocument, string, IWeight>? storage;
-
-    public override int Count => storage!.Count;
-
-    public VSM_docterm(IEnumerable<IDocument>? corpus = null) => storage = new VSMStorage_docterm(corpus);
-
-    public override IEnumerator<IDocument> GetEnumerator() => storage!.GetEnumerator();
-
-    public override SearchItem[] GetSearchItems(ISRIVector<string, IWeight> query, int snippetLen)
+    public override double SimilarityRate(ISRIVector<T2, IWeight> doc1, ISRIVector<T2, IWeight> doc2)
     {
-        storage!.UpdateDocs(); /*analizar si es null*/ int count = 0; SearchItem[] result = new SearchItem[storage.Count];
-        foreach (var item in storage)
-            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, storage[item]));
-        return result;
-    }
-
-    public override double SimilarityRate(ISRIVector<string, IWeight> doc1, ISRIVector<string, IWeight> doc2)
-    {
-        if ((storage as VSMStorage_docterm)!.InvFrecTerms is null) return -1;
+        if ((Storage as VSMStorageDocTerm)!.InvFrecTerms is null) return -1;
 
         double normaDoc1 = 0, scalarMul = 0;
         foreach (var item1 in doc1)
@@ -75,75 +62,25 @@ public class VSM_docterm : SRIModel<IDocument, string, IWeight>, ISRIModel<IDocu
         return scalarMul / (normaDoc1 * normaDoc2);
     }
 
-    public ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
-    {
-        ProcesedDocument results = new ProcesedDocument(docs);
-
-        SRIVectorLinked<string, IWeight> query = new SRIVectorLinked<string, IWeight>();
-        foreach ((string, int) item in results)
-        {
-            
-        }
-
-        return query;
-    }
-
-    public override void Add(IDocument item) => throw new NotImplementedException();
-
-    public override void Clear() => throw new NotImplementedException();
-
-    public override bool Contains(IDocument item) => throw new NotImplementedException();
-
-    public override void CopyTo(IDocument[] array, int arrayIndex) => throw new NotImplementedException();
-
-    public override bool Remove(IDocument item) => throw new NotImplementedException();
+    public override SearchItem[] Ranking(SearchItem[] searchResult) => searchResult.OrderBy(x => x.Score).Reverse().ToArray();
 }
 
-public class VSM : ICollection<IDocument>
+public abstract class WMDocTerm : WModel<IDocument, string, IDocument>, ISRIModel<IDocument, string, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    protected VSMStorage? storage;
+    public WMDocTerm(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageDocTerm(corpus);
 
-    public int Count => storage!.Count;
-
-    public bool IsReadOnly => true;
-
-    public VSM(IEnumerable<IDocument>? corpus = null) => storage = new VSMStorage(corpus);
-
-    public SearchItem[] GetSearchItems(ISRIVector<string, IWeight> query, int snippetLen)
+    public override SearchItem[] GetSearchItems(ISRIVector<string, IWeight> query, int snippetLen)
     {
-        storage!.UpdateDocs(); /*analizar si es null*/ int count = 0; SearchItem[] result = new SearchItem[storage.Count]; double[] score = new double[storage.Count];
-
-        double queryscore = 0;
-        foreach (var item in query)
-        {
-            queryscore += Math.Pow(item.Item2.Weight, 2);
-            foreach (var item1 in storage[item.Item1])
-            {
-                score[item1.Item1] += item.Item2.Weight * item1.Item2.Weight;
-            }
-        }
-        queryscore = Math.Sqrt(queryscore);
-
-        foreach (var item in storage.GetAllDocs())
-        {
-            result[count] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), score[count++] / (queryscore * item.Item2));
-        }
+        ((VSMStorageDocTerm)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0; SearchItem[] result = new SearchItem[Storage.Count];
+        foreach (var item in Storage)
+            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, ((VSMStorageDocTerm)Storage)[item]));
         return result;
     }
+}
 
-    public double SimilarityRate(ISRIVector<string, IWeight> doc1, ISRIVector<string, IWeight> doc2) => throw new NotImplementedException();
-
-    public SearchItem[] Ranking(SearchItem[] searchResult) => searchResult.OrderBy(x => x.Score).Reverse().ToArray();
-
-    public void Add(IDocument item) => storage!.Add(item);
-    public void Clear() => storage!.Clear();
-    public bool Contains(IDocument item) => storage!.Contains(item);
-    public void CopyTo(IDocument[] array, int arrayIndex) => storage!.CopyTo(array, arrayIndex);
-    public bool Remove(IDocument item) => storage!.Remove(item);
-
-    public IEnumerator<IDocument> GetEnumerator() => storage!.GetAllDocs().Select(x => x.Item1).GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+public class VSMDocTerm : WMDocTerm, ISRIModel<IDocument, string, IWeight, string, IDocument>, ICollection<IDocument>
+{
+    public VSMDocTerm(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
 
     public static ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
     {
@@ -156,4 +93,52 @@ public class VSM : ICollection<IDocument>
             query.Add(item.Item1, new QueryVSMWeight(item.Item2, modalFrec));
         return query;
     }
+
+}
+
+public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
+{
+    public WMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageTermDoc(corpus);
+
+    public override SearchItem[] GetSearchItems(ISRIVector<string, IWeight> query, int snippetLen)
+    {
+        ((VSMStorageTermDoc)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0;
+        SearchItem[] result = new SearchItem[Storage.Count];
+        double[] score = new double[Storage.Count];
+
+        double queryscore = 0;
+        foreach (var item in query)
+        {
+            queryscore += Math.Pow(item.Item2.Weight, 2);
+            foreach (var item1 in ((VSMStorageTermDoc)Storage!)[item.Item1])
+            {
+                score[item1.Item1] += item.Item2.Weight * item1.Item2.Weight;
+            }
+        }
+        queryscore = Math.Sqrt(queryscore);
+
+        foreach (var item in ((VSMStorageTermDoc)Storage).GetAllDocs())
+        {
+            result[count] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), score[count++] / (queryscore * item.Item2));
+        }
+        return result;
+    }
+}
+
+public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
+{
+    public VSMTermDoc(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
+
+    public static ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
+    {
+        ProcesedDocument results = new ProcesedDocument(docs);
+
+        SRIVectorLinked<string, IWeight> query = new SRIVectorLinked<string, IWeight>();
+        int modalFrec = results.MaxBy(x => x.Item2).Item2;
+
+        foreach ((string, int) item in results)
+            query.Add(item.Item1, new QueryVSMWeight(item.Item2, modalFrec));
+        return query;
+    }
+
 }

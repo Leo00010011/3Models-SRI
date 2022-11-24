@@ -6,15 +6,15 @@ using DP;
 using DP.Interface;
 using SRI.Interface;
 
-public abstract class Storage<D, T, V> : IStorage<D, T, V>, ICollection<D> where D : notnull where T : notnull
+public abstract class Storage<T1, T2, V, D> : IStorage<T1, T2, V, D>, ICollection<D> where T1 : notnull where T2 : notnull
 {
-    public abstract ISRIVector<T, V> this[D index] { get; }
+    public abstract ISRIVector<T2, V> this[T1 index] { get; }
 
     public abstract int Count { get; }
     public abstract bool IsReadOnly { get; }
 
-    public abstract ISRIVector<T, V> GetDocVector(D doc);
-    public abstract ISRIVector<D, V> GetTermVector(T index);
+    public abstract ISRIVector<T2, V> GetDocVector(T1 doc);
+    public abstract ISRIVector<T1, V> GetTermVector(T2 index);
     public abstract void UpdateDocs();
 
     public abstract void Add(D item);
@@ -26,9 +26,8 @@ public abstract class Storage<D, T, V> : IStorage<D, T, V>, ICollection<D> where
     public abstract IEnumerator<D> GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 }
-#region doc terms
 
-public class VSMStorage_docterm : Storage<IDocument, string, IWeight>, IStorage<IDocument, string, IWeight>
+public class VSMStorageDocTerm : Storage<IDocument, string, IWeight, IDocument>, IStorage<IDocument, string, IWeight, IDocument>
 {
     private SRIVectorDic<IDocument, (ISRIVector<string, IWeight>, int)> weightMatrix;
 
@@ -38,7 +37,7 @@ public class VSMStorage_docterm : Storage<IDocument, string, IWeight>, IStorage<
 
     private bool needUpdate;
 
-    public VSMStorage_docterm(IEnumerable<IDocument>? corpus)
+    public VSMStorageDocTerm(IEnumerable<IDocument>? corpus)
     {
         weightMatrix = new SRIVectorDic<IDocument, (ISRIVector<string, IWeight>, int)>();
         InvFrecTerms = new SRIVectorDic<string, int>();
@@ -172,9 +171,7 @@ public class VSMStorage_docterm : Storage<IDocument, string, IWeight>, IStorage<
     IEnumerator IEnumerable.GetEnumerator() => weightMatrix.Select(x => x.Item1).GetEnumerator();
 }
 
-#endregion
-
-public class VSMStorage : Storage<string, int, IWeight>, IStorage<string, int, IWeight>
+public class VSMStorageTermDoc : Storage<string, int, IWeight, IDocument>, IStorage<string, int, IWeight, IDocument>
 {
     private SRIVectorDic<string, SRIVectorDic<int, IWeight>> weightMatrix;
     private List<(int, IDocument, double)> FrecModal;
@@ -182,7 +179,7 @@ public class VSMStorage : Storage<string, int, IWeight>, IStorage<string, int, I
 
     public override ISRIVector<int, IWeight> this[string index] => GetDocVector(index);
 
-    public VSMStorage(IEnumerable<IDocument>? corpus)
+    public VSMStorageTermDoc(IEnumerable<IDocument>? corpus)
     {
         weightMatrix = new SRIVectorDic<string, SRIVectorDic<int, IWeight>>();
         FrecModal = new List<(int, IDocument, double)>();
@@ -203,7 +200,7 @@ public class VSMStorage : Storage<string, int, IWeight>, IStorage<string, int, I
         for (int i = 0; i < FrecModal.Count; i++)
         {
             stateDoc stateDoc = FrecModal[i].Item2.GetState();
-            state = (stateDoc is stateDoc.changed || ((state is stateDoc.changed || state is stateDoc.deleted) && 
+            state = (stateDoc is stateDoc.changed || ((state is stateDoc.changed || state is stateDoc.deleted) &&
                    !(stateDoc is stateDoc.deleted))) ? stateDoc.changed : stateDoc;
             switch (state)
             {
@@ -289,7 +286,7 @@ public class VSMStorage : Storage<string, int, IWeight>, IStorage<string, int, I
         needUpdate = false;
     }
 
-    public void Add(IDocument item)
+    public override void Add(IDocument item)
     {
         needUpdate = true;
 
@@ -297,25 +294,17 @@ public class VSMStorage : Storage<string, int, IWeight>, IStorage<string, int, I
         GenWeightTerms(item, in num);
     }
 
-    public override void Add(string item) => throw new NotImplementedException();
-
     public override void Clear() => weightMatrix = new SRIVectorDic<string, SRIVectorDic<int, IWeight>>();
 
-    public override bool Contains(string item) => throw new NotImplementedException();
+    public override bool Contains(IDocument item) => throw new NotImplementedException();
 
-    public bool Contains(IDocument item) => throw new NotImplementedException();
+    public override void CopyTo(IDocument[] array, int arrayIndex) => throw new NotImplementedException();
 
-    public override void CopyTo(string[] array, int arrayIndex) => throw new NotImplementedException();
-
-    public void CopyTo(IDocument[] array, int arrayIndex) => throw new NotImplementedException();
-
-    public bool Remove(IDocument item) => throw new NotImplementedException();
-
-    public override bool Remove(string item) => throw new NotImplementedException();
+    public override bool Remove(IDocument item) => throw new NotImplementedException();
 
     public IEnumerable<(IDocument, double)> GetAllDocs() => FrecModal.Select(x => (x.Item2, x.Item3))!;
 
-    public override IEnumerator<string> GetEnumerator() => weightMatrix!.Select(x => x.Item1).GetEnumerator();
+    public override IEnumerator<IDocument> GetEnumerator() => FrecModal.Select(x => x.Item2)!.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => weightMatrix!.Select(x => x.Item1).GetEnumerator();
 }
