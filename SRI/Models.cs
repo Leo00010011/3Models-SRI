@@ -142,3 +142,265 @@ public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDo
     }
 
 }
+
+public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument>, ICollection<IDocument>
+{
+    private static BooleanNode root;
+    
+    public BSMTermDoc(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
+    private static void create_query_ast(List<TokenLexem> tokenized)
+    {   
+        IEnumerator<TokenLexem> t =tokenized.GetEnumerator();
+        t.MoveNext();
+        S(t,ref BSMTermDoc.root);
+       
+        void S(IEnumerator<TokenLexem> tokenized,ref BooleanNode current)
+        {
+
+            switch (tokenized.Current)
+            {
+                case TokenLexem.opar:
+                case TokenLexem.word:
+                {
+                    P(tokenized,ref current);
+                    X(tokenized,ref current);
+                    break;
+                }
+                case TokenLexem.not:
+                {
+                    if(tokenized.MoveNext())
+                    {
+
+                        BooleanNode not = new NotNode();
+                        if(current != null) current.add_child(not);
+                        else current = not;
+                        
+                        if(tokenized.Current == TokenLexem.opar)
+                        {
+                            P(tokenized,ref not);
+                            X(tokenized,ref not); 
+                        }
+                        else
+                        {
+                            P(tokenized,ref current);
+                            X(tokenized,ref current); 
+                        }
+
+                    }//! bad EOF            
+                    break;
+                }
+                default:
+                {
+                    //! unexpected token
+                   
+                    break;
+                }
+            }
+        }
+        
+        void P(IEnumerator<TokenLexem> tokenized,ref BooleanNode current)
+        {
+          switch (tokenized.Current)
+            {
+                case TokenLexem.opar:
+                {
+                    if(tokenized.MoveNext())
+                    {
+                        BooleanNode temp = null;
+                        S(tokenized,ref temp);
+                        if(current != null) current.add_child(temp);
+                        else current = temp;
+
+                        if(tokenized.Current != TokenLexem.cpar){ } //! missing cpar
+                        tokenized.MoveNext();
+
+                    }//! bad EOF
+                    break;
+                }
+                case TokenLexem.word:
+                {
+                    tokenized.MoveNext();
+                    break;
+                }
+                default:
+                {
+                    //! notificar error de query
+                    break;
+                }
+            }   
+        }
+       
+        void X(IEnumerator<TokenLexem> tokenized,ref BooleanNode current)
+        {
+            BooleanNode temp;
+            switch (tokenized.Current)
+            {
+                case TokenLexem.or:
+                {
+                    temp = new OrNode();
+                    break;
+                }
+                case TokenLexem.and:
+                {
+                    temp = new AndNode();
+                    break;
+                }
+                case TokenLexem.xor:
+                {
+                    temp = new XorNode();
+                    break;
+                }
+                case TokenLexem.implies:
+                {
+                    temp = new ImplicationNode();
+                    break;
+                }
+                case TokenLexem.double_implies:
+                {
+                    temp = new DoubleImplicationNode();
+                    break;
+                }
+                default:
+                {
+                    return;
+                }
+            } 
+            tokenized.MoveNext();
+            if(current != null) temp.add_child(current);
+            current = temp;
+            S(tokenized,ref current);  
+        }
+    }
+
+    private static bool evaluate(bool[] values, int index)
+    {
+        return evaluate(values,ref index, BSMTermDoc.root);
+    }
+    private static bool evaluate(bool[] values,ref int index, BooleanNode node)
+    {
+        bool evaluation;
+        try
+        {
+            BinaryNode n2 = (BinaryNode)node;
+            switch (n2.childs.Count)
+            {
+                case 0:
+                {
+                    evaluation = n2.evaluate(values[index++], values[index++]);
+                    break;
+                }
+                case 1:
+                {
+                    evaluation = n2.evaluate(evaluate(values,ref index,(BooleanNode)n2.childs[0]), values[index++]);
+                    break;
+                }
+                default: 
+                {
+                    evaluation = n2.evaluate(evaluate(values,ref index,(BooleanNode)n2.childs[0]), evaluate(values,ref index,(BooleanNode)n2.childs[1]));
+                    break;
+                }
+            }  
+        }
+        catch 
+        {
+            UnaryNode n1 = (UnaryNode)node;
+            switch (n1.childs.Count)
+            {
+                case 0:
+                {
+                    evaluation = n1.evaluate(values[index++]);
+                    break;
+                }
+                default: 
+                {
+                    evaluation = n1.evaluate(evaluate(values,ref index,(BooleanNode)n1.childs[0]));
+                    break;
+                }
+            } 
+        }
+        return evaluation;
+    }
+
+    public static ISRIVector<string, int> CreateQuery(IEnumerable<char> docs)
+    {
+        SRIVectorLinked<string, int> query = new SRIVectorLinked<string, int>();
+        List<TokenLexem> tokenized = new List<TokenLexem>();
+
+        string token ="";
+        foreach(char c in docs)
+        {
+                if( c== '<')
+                {   
+                    if(!string.IsNullOrEmpty(token))
+                    {
+                        query.Add(token,1); 
+                        tokenized.Add(TokenLexem.word);
+                    } 
+                    token = "<";
+                }
+                else if(c== '=')
+                {   
+                    if(token == "<") token= "<="; 
+                    else if(!string.IsNullOrEmpty(token))
+                    {   query.Add(token,1); 
+                        tokenized.Add(TokenLexem.word);
+                        token = "=";
+                    } 
+                }
+                else if(char.IsLetter(c) || char.IsNumber(c)) token+= c.ToString();
+                else
+                {
+                    if(c =='>')
+                    {
+                        if (token == "=") tokenized.Add(TokenLexem.implies);
+                        else if(token == "<=")  tokenized.Add(TokenLexem.double_implies);
+                        token ="";
+                    }
+                    if(!string.IsNullOrEmpty(token)){query.Add(token,1); tokenized.Add(TokenLexem.word); token="";}
+                    if (c== '&') tokenized.Add(TokenLexem.and);
+                    if(c == '|') tokenized.Add(TokenLexem.or);
+                    if(c == '^') tokenized.Add(TokenLexem.xor);
+                    if(c == '!') tokenized.Add(TokenLexem.not);
+                    if(c == '(') tokenized.Add(TokenLexem.opar);
+                    if(c == ')') tokenized.Add(TokenLexem.cpar);
+                }
+                
+        }
+        if(!string.IsNullOrEmpty(token)){query.Add(token,1); tokenized.Add(TokenLexem.word);}
+        tokenized.Add(TokenLexem.EOF);
+        foreach (var item in tokenized)
+        {
+            System.Console.WriteLine(item);
+        }
+        BSMTermDoc.create_query_ast(tokenized);
+        return query;
+    }
+    public SearchItem[] GetSearchItems(ISRIVector<string, int> query, int snippetLen = 30)
+    {
+        ((VSMStorageTermDoc)Storage!).UpdateDocs(); /*analizar si es null*/ 
+        SearchItem[] result = new SearchItem[Storage.Count];
+        bool[][] score = new bool[Storage.Count][] ;
+        int index = 0;
+        foreach (var item in query)
+        {
+            foreach (var item1 in ((VSMStorageTermDoc)Storage!)[item.Item1])
+            {
+                if(score[item1.Item1] == null) score[item1.Item1] = new bool[query.Count];
+                score[item1.Item1][index] = true;
+            }
+            index++;
+        }
+        index = 0;
+        foreach (var item in ((VSMStorageTermDoc)Storage).GetAllDocs())
+        {
+            result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), (evaluate(score[index++], 0)? 1:0) );
+        }
+        return result;
+    }
+    
+    public double SimilarityRate(ISRIVector<string, int> doc1, ISRIVector<string, int> doc2)
+    {
+        throw new NotImplementedException();
+    }
+}
+
