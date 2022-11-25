@@ -10,6 +10,86 @@ public enum stateDoc
     notchanged
 }
 
+public class LazyKMP : LazyMatcher
+{
+
+    public int IndexToMatch
+    {
+        get
+        {
+            return indexToMatch;
+        }
+    }
+
+    public string Pattern
+    {
+        get
+        {
+            return pattern;
+        }
+    }
+
+    private int indexToMatch;
+
+    readonly private string pattern;
+
+    readonly int[] pi;
+
+    public LazyKMP(string pattern)
+    {
+        this.pattern = pattern;
+        pi = ComputePrefixFunction(pattern);
+    }
+
+    public static int[] ComputePrefixFunction(string pattern)
+    {
+        int[] pi = new int[pattern.Length];
+        int k = 0;
+        for (int i = 1; i < pattern.Length; i++)
+        {
+            while(k > 0 && pattern[k] != pattern[i])
+                k = pi[k - 1];
+            if( pattern[k] == pattern[i])
+                k++;
+            pi[i] = k;
+        }
+        return pi;
+    }
+
+    public bool MatchStep(char step)
+    {
+        while(indexToMatch > 0 && pattern[indexToMatch] != step)
+            indexToMatch = pi[indexToMatch - 1];
+        if(pattern[indexToMatch] == step)
+            indexToMatch++;
+        if(indexToMatch == pattern.Length)
+        {
+            indexToMatch = 0;
+            return true;
+        }
+        return false;
+    }
+
+    public bool Match(IEnumerable<char> text)
+    {
+        bool last = false;
+        foreach (var step in text)
+        {
+            last = this.MatchStep(step);
+        }
+        indexToMatch = 0;
+        return last;
+
+    }
+
+    public bool Match(string text)
+    {
+        if(text.Length < pattern.Length)
+            return false;
+        return this.Match((IEnumerable<char>)text);
+    }
+}
+
 
 
 public class Document : IDocument
