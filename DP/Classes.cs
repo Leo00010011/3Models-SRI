@@ -10,6 +10,8 @@ public enum stateDoc
     notchanged
 }
 
+
+
 public class Document : IDocument
 {
     private ParsedInfo? info;
@@ -81,6 +83,8 @@ public class Document : IDocument
 
     public override int GetHashCode() => Id.GetHashCode();
 }
+
+
 
 public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
 {

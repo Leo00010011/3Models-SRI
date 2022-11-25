@@ -6,11 +6,96 @@ using DP.Interface;
 using SRI;
 using SRI.Interface;
 using Utils;
+using System.Text.RegularExpressions;
 
 namespace Test;
-public static class TestingMethods
+
+public class LazyKMP
 {
 
+    public int IndexToMatch
+    {
+        get
+        {
+            return indexToMatch;
+        }
+    }
+
+    public string Pattern
+    {
+        get
+        {
+            return pattern;
+        }
+    }
+
+    private int indexToMatch;
+
+    readonly private string pattern;
+
+    readonly int[] pi;
+
+    public LazyKMP(string pattern)
+    {
+        this.pattern = pattern;
+        pi = ComputePrefixFunction(pattern);
+    }
+
+    public static int[] ComputePrefixFunction(string pattern)
+    {
+        int[] pi = new int[pattern.Length];
+        int k = 0;
+        for (int i = 1; i < pattern.Length; i++)
+        {
+            while(k > 0 && pattern[k] != pattern[i])
+                k = pi[k - 1];
+            if( pattern[k] == pattern[i])
+                k++;
+            pi[i] = k;
+        }
+        return pi;
+    }
+
+    public bool MatchStep(char step)
+    {
+        while(indexToMatch > 0 && pattern[indexToMatch] != step)
+            indexToMatch = pi[indexToMatch - 1];
+        if(pattern[indexToMatch] == step)
+            indexToMatch++;
+        if(indexToMatch == pattern.Length)
+        {
+            indexToMatch = 0;
+            return true;
+        }
+        return false;
+    }
+
+    public bool Match(IEnumerable<char> text)
+    {
+        bool last = false;
+        foreach (var step in text)
+        {
+            last = this.MatchStep(step);
+        }
+        indexToMatch = 0;
+        return last;
+
+    }
+}
+
+
+
+
+public class CranDocSpliter 
+{
+    StreamReader reader;
+
+    public CranDocSpliter(string path)
+    {
+        
+    }
+
+    
 }
 
 public class Program
@@ -45,7 +130,21 @@ public class Program
         }
     }
 
-    public static void Main(string[] args)
+    private static char ReadTest(IEnumerable<IDocument> docs)
+    {
+        char a = '0';
+        foreach (var doc in docs)
+        {
+            foreach (var item in doc)
+            {
+                a = item;
+            }
+        }
+        return a;
+    }
+
+
+    private static void SpeedTest()
     {
         Stopwatch cloc = new Stopwatch();
         IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
@@ -87,18 +186,28 @@ public class Program
         }
     }
 
-    private static char ReadTest(IEnumerable<IDocument> docs)
+    
+
+    public static void Main(string[] args)
     {
-        char a = '0';
-        foreach (var doc in docs)
+        string pattern = "abdeabcf";
+        foreach (var item in LazyKMP.ComputePrefixFunction(pattern))
         {
-            foreach (var item in doc)
-            {
-                a = item;
-            }
+            Console.Write(item.ToString() + " ,");
         }
-        return a;
+        Console.WriteLine();
+
+        var matcher = new LazyKMP(pattern);
+        while(true)
+        {
+            string text = Console.ReadLine();
+            Console.WriteLine(matcher.Match(text));
+            
+        }
+
     }
+
+
 }
 
 
