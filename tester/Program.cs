@@ -130,7 +130,6 @@ using Utils;
 // System.Console.WriteLine($"Snippet init: {a.SnippetInit}");
 
 ISRIVector<string, int> query = BSMTermDoc.CreateQuery("hola & casa | (!flor <=> luna)");
-foreach (var (item, item2) in query)
-{
-    System.Console.WriteLine(item);
-}
+
+
+

@@ -1,11 +1,11 @@
 namespace SRI;
 
 enum TokenLexem{
-    and, or, not, xor, double_implies, implies, word, opar, cpar
+    and, or, not, xor, double_implies, implies, word, opar, cpar, EOF
 }
 public abstract class Node<T> 
 {
-    protected List<Node<T>> childs;
+    public List<Node<T>> childs;
 
     public Node()
     {
@@ -59,7 +59,7 @@ public class XorNode : BinaryNode
        return left ^ rigth;
     }
 }
-public class DobleImplicationNode : BinaryNode
+public class DoubleImplicationNode : BinaryNode
 {
     public override bool evaluate(bool left, bool rigth)
     {
