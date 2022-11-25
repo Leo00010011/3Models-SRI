@@ -150,6 +150,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
     public BSMTermDoc(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
     private static void create_query_ast(List<TokenLexem> tokenized)
     {   
+        BSMTermDoc.root = null;
         IEnumerator<TokenLexem> t =tokenized.GetEnumerator();
         t.MoveNext();
         S(t,ref BSMTermDoc.root);
@@ -272,14 +273,16 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
         }
     }
 
-    private static bool evaluate(bool[] values, int index)
+    public static bool evaluate(bool[] values, int index)
     {
         return evaluate(values,ref index, BSMTermDoc.root);
     }
     private static bool evaluate(bool[] values,ref int index, BooleanNode node)
     {
         bool evaluation;
-        try
+        if(values.Length <=0) return false;
+        if(node == null) return values[0];
+        if(node is BinaryNode)
         {
             BinaryNode n2 = (BinaryNode)node;
             switch (n2.childs.Count)
@@ -291,7 +294,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 }
                 case 1:
                 {
-                    evaluation = n2.evaluate(evaluate(values,ref index,(BooleanNode)n2.childs[0]), values[index++]);
+                    evaluation = n2.evaluate(values[index++],evaluate(values,ref index,(BooleanNode)n2.childs[0]));
                     break;
                 }
                 default: 
@@ -301,7 +304,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 }
             }  
         }
-        catch 
+        else
         {
             UnaryNode n1 = (UnaryNode)node;
             switch (n1.childs.Count)
@@ -393,7 +396,8 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
         index = 0;
         foreach (var item in ((VSMStorageTermDoc)Storage).GetAllDocs())
         {
-            result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), (evaluate(score[index++], 0)? 1:0) );
+            result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), (evaluate((score[index] != null? score[index]: new bool[query.Count]), 0)? 1:0) );
+            index++;
         }
         return result;
     }
