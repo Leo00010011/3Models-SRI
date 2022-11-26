@@ -129,7 +129,25 @@ using Utils;
 // System.Console.WriteLine($"Text Init: {a.TextInit}");
 // System.Console.WriteLine($"Snippet init: {a.SnippetInit}");
 
-ISRIVector<string, int> query = BSMTermDoc.CreateQuery("hola & casa | (!flor <=> luna)");
+ISRIVector<string, int> query = BSMTermDoc.CreateQuery("tony & !homosexuality");
+bool[] x = new bool[2];
+x[0]= true;
+x[1]= true;
+
+string corpus_path = "C:\\Users\\User\\Desktop\\Test Collections\\Test Collections\\20 Newsgroups\\20news-18828\\talk.religion.misc";
+IEnumerable<string> directories = Utils.Utils.ReadAllFiles(corpus_path);
+LinkedList<IDocument> docs = new LinkedList<IDocument>();
+foreach (var item in directories)
+{
+   docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
+}
+BSMTermDoc booleanModel = new BSMTermDoc(docs); 
+ISearchResult result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(query,300)),""); 
+       
+foreach (var item in result)
+{
+    System.Console.WriteLine($"{SearchItem.Convert(item.Title)} => {item.Score}");
+}
 
 
 
