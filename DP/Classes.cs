@@ -10,7 +10,7 @@ public enum stateDoc
     notchanged
 }
 
-public class LazyKMP : LazyMatcher
+public class LazyKMP : ILazyMatcher
 {
 
     public int IndexToMatch
@@ -112,6 +112,43 @@ public class LazyKMP : LazyMatcher
         if(text.Length < pattern.Length)
             return false;
         return this.Match((IEnumerable<char>)text);
+    }
+}
+
+public class ConsecutiveNumberMatcher : ILazyMatcher
+{
+    public bool AtFinalState 
+    {
+        get;
+        private set;
+    }
+
+    public bool Match(IEnumerable<char> text)
+    {
+        foreach(char item in text)
+        {
+            if(!Char.IsDigit(item))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public bool Match(string text)
+    {
+        return Match((IEnumerable<char>)text);
+    }
+
+    public bool MatchStep(char step)
+    {
+        AtFinalState = Char.IsDigit(step);
+        return AtFinalState;
+    }
+
+    public bool PeekStep(char step)
+    {
+        return Char.IsDigit(step);
     }
 }
 

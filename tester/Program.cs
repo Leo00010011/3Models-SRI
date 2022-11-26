@@ -124,7 +124,7 @@ public class Program
         }
         Console.WriteLine();
 
-        var matcher = new LazyKMP(pattern);
+        var matcher = new ConsecutiveNumberMatcher();
         while(true)
         {
             char step = char.Parse(Console.ReadLine());

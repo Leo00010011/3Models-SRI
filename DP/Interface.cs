@@ -42,7 +42,7 @@ public interface IResult<TValue, KKey, MPiece> : IEnumerable<(KKey, MPiece)>
     }
 }
 
-public interface LazyMatcher
+public interface ILazyMatcher
 {
 
     bool AtFinalState
