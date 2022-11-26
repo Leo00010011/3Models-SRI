@@ -86,7 +86,13 @@ public class LazyKMP : LazyMatcher
 
     public bool PeekStep(char step)
     {
-        return pattern[indexToMatch] == step;
+        bool result = false;
+        int temp = indexToMatch;
+        while(temp > 0 && pattern[temp] != step)
+            temp = pi[temp - 1];
+        if(pattern[indexToMatch] == step)
+            result = true;
+        return result;
     }
 
     public bool Match(IEnumerable<char> text)
@@ -97,7 +103,7 @@ public class LazyKMP : LazyMatcher
             last = this.MatchStep(step);
         }
         indexToMatch = 0;
-        return last;
+        return AtFinalState;
 
     }
 
@@ -108,8 +114,6 @@ public class LazyKMP : LazyMatcher
         return this.Match((IEnumerable<char>)text);
     }
 }
-
-
 
 public class Document : IDocument
 {

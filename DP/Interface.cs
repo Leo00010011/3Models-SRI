@@ -44,15 +44,6 @@ public interface IResult<TValue, KKey, MPiece> : IEnumerable<(KKey, MPiece)>
 
 public interface LazyMatcher
 {
-    int IndexToMatch
-    {
-        get;
-    }
-
-    string Pattern
-    {
-        get;
-    }
 
     bool AtFinalState
     {

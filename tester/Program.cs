@@ -127,8 +127,21 @@ public class Program
         var matcher = new LazyKMP(pattern);
         while(true)
         {
-            string text = Console.ReadLine();
-            Console.WriteLine(matcher.Match(text));
+            char step = char.Parse(Console.ReadLine());
+            if(matcher.MatchStep(step))
+            {
+                Console.WriteLine("good step");
+            }
+            else
+            {
+                Console.WriteLine("bad step");
+            }
+
+            if(matcher.AtFinalState)
+            {
+                Console.WriteLine("At final State!!");
+            }
+            
             
         }
 
