@@ -57,4 +57,6 @@ public interface ILazyMatcher
     bool Match(IEnumerable<char> text);
 
     bool Match(string text);
+
+    ILazyMatcher CloneParsing();
 }

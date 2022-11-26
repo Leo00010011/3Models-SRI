@@ -31,8 +31,7 @@ public class LazyKMP : ILazyMatcher
 
     public bool AtFinalState
     {
-        get;
-        private set;
+        get => indexToMatch == pattern.Length;
     }
 
     private int indexToMatch;
@@ -64,22 +63,15 @@ public class LazyKMP : ILazyMatcher
 
     public bool MatchStep(char step)
     {
+        if(indexToMatch == pattern.Length)
+            indexToMatch = 0;
+
         bool result = false;
         while(indexToMatch > 0 && pattern[indexToMatch] != step)
             indexToMatch = pi[indexToMatch - 1];
         if(pattern[indexToMatch] == step)
             result = true;
             indexToMatch++;
-        
-        if(indexToMatch == pattern.Length)
-        {
-            AtFinalState = true;
-            indexToMatch = 0;
-        }
-        else
-        {
-            AtFinalState = false;
-        }
         
         return result;
     }
@@ -88,6 +80,8 @@ public class LazyKMP : ILazyMatcher
     {
         bool result = false;
         int temp = indexToMatch;
+        if(indexToMatch == pattern.Length)
+            temp = 0;
         while(temp > 0 && pattern[temp] != step)
             temp = pi[temp - 1];
         if(pattern[indexToMatch] == step)
@@ -113,6 +107,13 @@ public class LazyKMP : ILazyMatcher
             return false;
         return this.Match((IEnumerable<char>)text);
     }
+
+    public ILazyMatcher CloneParsing()
+    {
+        var result = new LazyKMP(pattern);
+        result.indexToMatch = indexToMatch;
+        return result;
+    }
 }
 
 public class ConsecutiveNumberMatcher : ILazyMatcher
@@ -121,6 +122,11 @@ public class ConsecutiveNumberMatcher : ILazyMatcher
     {
         get;
         private set;
+    }
+
+    public ILazyMatcher CloneParsing()
+    {
+        return new ConsecutiveNumberMatcher();
     }
 
     public bool Match(IEnumerable<char> text)
@@ -150,7 +156,145 @@ public class ConsecutiveNumberMatcher : ILazyMatcher
     {
         return Char.IsDigit(step);
     }
+
+    
 }
+
+public class EndCranMatcher : ILazyMatcher
+{
+    readonly string firstPattern = "\n.i ";
+    readonly char thirdPattern = '\n';
+
+    private int indexToMatch = 0;
+
+    private Func<char,bool> matchFunc;
+    private Func<char,bool> peekFunc;
+
+    public bool AtFinalState
+    {
+        get;
+        private set;
+    }
+
+    public EndCranMatcher()
+    {
+        matchFunc = MatchFirstPattern;
+        peekFunc = PeekFirstPattern;
+    }
+
+    public bool Match(string text)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool Match(IEnumerable<char> text)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool PeekStep(char step)
+    {
+        return peekFunc(step);
+    }
+    public bool MatchStep(char step)
+    {
+        return matchFunc(step);
+    }
+
+    private bool PeekFirstPattern(char step)
+    {
+        return firstPattern[indexToMatch] == step;
+    }
+
+    private bool MatchFirstPattern(char step)
+    {
+        AtFinalState = false;
+        
+        if(firstPattern[indexToMatch] == step)
+        {
+            indexToMatch++;
+            if(indexToMatch == firstPattern.Length)
+            {
+                matchFunc = MatchSecondPattern;
+                peekFunc = PeekSecondPattern;
+                indexToMatch = 0;
+            }
+            return true;
+        }
+        else
+        {
+            indexToMatch = 0;
+            return false;
+        }
+    }
+
+    private bool PeekSecondPattern(char step)
+    {
+        return Char.IsDigit(step);
+    }
+
+    private bool MatchSecondPattern(char step)
+    {
+        AtFinalState = false;
+        if(Char.IsDigit(step))
+        {
+            return true;
+        }
+        else
+        {
+            if(PeekThirdPattern(step))
+            {
+                peekFunc = PeekThirdPattern;
+                matchFunc = MatchThirdPattern;
+                indexToMatch = 0;
+                return matchFunc(step);
+            }
+            else
+            {
+                peekFunc = PeekFirstPattern;
+                matchFunc = MatchFirstPattern;
+                indexToMatch = 0;
+                return matchFunc(step);
+            }
+        }
+    }
+
+    private bool PeekThirdPattern(char step)
+    {
+        return thirdPattern == step;
+    }
+
+    private bool MatchThirdPattern(char step)
+    {
+        AtFinalState = false;
+        if(thirdPattern == step)
+        {
+            indexToMatch = 0;
+            matchFunc = MatchFirstPattern;
+            peekFunc = PeekFirstPattern;
+            AtFinalState = true;
+            return true;
+        }
+        else
+        {
+            peekFunc = PeekFirstPattern;
+            matchFunc = MatchFirstPattern;
+            indexToMatch = 0;
+            return matchFunc(step);
+        }
+    }
+
+    public ILazyMatcher CloneParsing()
+    {
+        var result = new EndCranMatcher();
+        result.matchFunc = matchFunc;
+        result.peekFunc = peekFunc;
+        result.AtFinalState = AtFinalState;
+        return result;
+    }
+}
+
+
 
 public class Document : IDocument
 {

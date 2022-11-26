@@ -7,22 +7,98 @@ using SRI;
 using SRI.Interface;
 using Utils;
 using System.Text.RegularExpressions;
+using System.Collections;
 
 namespace Test;
 
 
 
 
-public class CranDocSpliter 
+public class CranDocSpliter : IEnumerable<IDocument>
 {
     StreamReader reader;
 
-    public CranDocSpliter(string path)
+    public CranDocSpliter(string cran_path)
     {
         
     }
 
-    
+    public IEnumerator<IDocument> GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return this.GetEnumerator();
+    }
+}
+
+public class CranDocSpliterEnumerator : IEnumerator<IDocument>
+{
+    public IDocument Current => throw new NotImplementedException();
+
+    object IEnumerator.Current => this.Current;
+
+    StreamReader sharedReader = null;
+
+    readonly string cran_path;
+
+    public CranDocSpliterEnumerator(string cran_path)
+    {
+        this.cran_path = cran_path;
+    }
+
+    public void Dispose()
+    {
+        if(sharedReader != null)
+        {
+            sharedReader.Dispose();
+            sharedReader = null;
+        }
+    }
+
+    public bool MoveNext()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Reset()
+    {
+        throw new NotImplementedException();
+    }
+
+    class CranDocument : IDocument
+    {
+        public string Id => throw new NotImplementedException();
+
+        public IEnumerable<char> Name => throw new NotImplementedException();
+
+        public IEnumerator<char> GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<char> GetSnippet(int snippetLen)
+        {
+            throw new NotImplementedException();
+        }
+
+        public stateDoc GetState()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UpdateDateTime()
+        {
+            throw new NotImplementedException();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
 
 public class Program
@@ -71,6 +147,7 @@ public class Program
     }
 
 
+
     private static void SpeedTest()
     {
         Stopwatch cloc = new Stopwatch();
@@ -113,38 +190,68 @@ public class Program
         }
     }
 
-    
+    public static ParsedInfo DummyParser(IEnumerable<char> text)
+    {
+        return new ParsedInfo(0,0,0,0,0);
+    }
+
+    public static void shiftLeft(char[] arr)
+    {
+        for (int i = 0; i < arr.Length - 1; i++)
+        {
+            arr[i] = arr[i+1];
+        }
+    }
+
+    public static void PrintTill(IEnumerable<char> text,int large)
+    {
+        Console.WriteLine(String.Concat(text.Take(large)));
+    }
+
+    public static IEnumerable<string> TestMatchStep(ILazyMatcher matcher,IEnumerable<char> text, int length)
+    {
+        char[] arr = new char[length];
+        int index = 0;
+        int iter = 0;
+            foreach(char step in text)
+            {
+                iter++;
+                Console.WriteLine(iter);
+                if(matcher.MatchStep(step))
+                {
+                    arr[index] = step;
+                    index++;
+                    if(matcher.AtFinalState)
+                    {
+                        yield return new String(arr);
+                    }
+                }
+                else
+                {
+                    index = 0;
+                }
+            }
+    }
+
+    public static void ProbeOfPattern(IEnumerable<char> cran)
+    {
+        int skip = 1042;
+        int take = 1048;
+        string text = String.Concat(cran.Take(take).Skip(skip));
+        var temp = text.ToArray();
+        Console.WriteLine(text);
+    }
 
     public static void Main(string[] args)
     {
-        string pattern = "abdeabcf";
-        foreach (var item in LazyKMP.ComputePrefixFunction(pattern))
+        using(var doc_reader = new StreamReader(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\cran\cran.all.1400"))
         {
-            Console.Write(item.ToString() + " ,");
+            Console.WriteLine(doc_reader.BaseStream);
         }
-        Console.WriteLine();
-
-        var matcher = new ConsecutiveNumberMatcher();
-        while(true)
-        {
-            char step = char.Parse(Console.ReadLine());
-            if(matcher.MatchStep(step))
-            {
-                Console.WriteLine("good step");
-            }
-            else
-            {
-                Console.WriteLine("bad step");
-            }
-
-            if(matcher.AtFinalState)
-            {
-                Console.WriteLine("At final State!!");
-            }
-            
-            
-        }
-
+        
+        //var doc = new Document("C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400",DummyParser);        
+        //var matcher = new EndCranMatcher();
+        
     }
 
 
