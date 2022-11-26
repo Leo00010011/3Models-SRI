@@ -70,14 +70,14 @@ public interface IStorage<T1, T2, V, D> : ICollection<D> where T1 : notnull wher
     /// </summary>
     /// <param name="index">es el identificador de dicho término en el modelo</param>
     /// <returns>retorna un vector término</returns>
-    ISRIVector<T1, V> GetTermVector(T2 index);
+    ISRIVector<T1, V> GetKey1Vector(T2 index);
 
     /// <summary>
     /// Este método se utiliza para selecionar un vector de documento específico
     /// </summary>
     /// <param name="index">es el identificador de dicho documento en el modelo</param>
     /// <returns>retorna un vector documento</returns>
-    ISRIVector<T2, V> GetDocVector(T1 doc);
+    ISRIVector<T2, V> GetKey2Vector(T1 doc);
 
     void UpdateDocs();
 }

@@ -33,8 +33,6 @@ public abstract class WModel<T1, T2, D> : SRIModel<T1, T2, IWeight, string, D>, 
 {
     public override double SimilarityRate(ISRIVector<T2, IWeight> doc1, ISRIVector<T2, IWeight> doc2)
     {
-        if ((Storage as VSMStorageDocTerm)!.InvFrecTerms is null) return -1;
-
         double normaDoc1 = 0, scalarMul = 0;
         foreach (var item1 in doc1)
         {
@@ -67,13 +65,13 @@ public abstract class WModel<T1, T2, D> : SRIModel<T1, T2, IWeight, string, D>, 
 
 public abstract class WMDocTerm : WModel<IDocument, string, IDocument>, ISRIModel<IDocument, string, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public WMDocTerm(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageDocTerm(corpus);
+    public WMDocTerm(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageDT(corpus);
 
     public override SearchItem[] GetSearchItems(ISRIVector<string, IWeight> query, int snippetLen)
     {
-        ((VSMStorageDocTerm)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0; SearchItem[] result = new SearchItem[Storage.Count];
+        ((VSMStorageDT)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0; SearchItem[] result = new SearchItem[Storage.Count];
         foreach (var item in Storage)
-            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, ((VSMStorageDocTerm)Storage)[item]));
+            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, ((VSMStorageDT)Storage)[item]));
         return result;
     }
 }
@@ -98,11 +96,11 @@ public class VSMDocTerm : WMDocTerm, ISRIModel<IDocument, string, IWeight, strin
 
 public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public WMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageTermDoc(corpus);
+    public WMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageTD(corpus);
 
     public override SearchItem[] GetSearchItems(ISRIVector<string, IWeight> query, int snippetLen)
     {
-        ((VSMStorageTermDoc)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0;
+        ((VSMStorageTD)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0;
         SearchItem[] result = new SearchItem[Storage.Count];
         double[] score = new double[Storage.Count];
 
@@ -110,14 +108,15 @@ public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<stri
         foreach (var item in query)
         {
             queryscore += Math.Pow(item.Item2.Weight, 2);
-            foreach (var item1 in ((VSMStorageTermDoc)Storage!)[item.Item1])
+            foreach (var item1 in ((VSMStorageTD)Storage!)[item.Item1])
             {
-                score[item1.Item1] += item.Item2.Weight * item1.Item2.Weight;
+                var index = ((VSMStorageTD)Storage!).DocsFrecModal[item1.Item1].Item1;
+                score[index] += item.Item2.Weight * item1.Item2.Weight;
             }
         }
         queryscore = Math.Sqrt(queryscore);
 
-        foreach (var item in ((VSMStorageTermDoc)Storage).GetAllDocs())
+        foreach (var item in ((VSMStorageTD)Storage).GetAllDocs())
         {
             result[count] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), score[count++] / (queryscore * item.Item2));
         }
@@ -140,5 +139,26 @@ public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDo
             query.Add(item.Item1, new QueryVSMWeight(item.Item2, modalFrec));
         return query;
     }
-
 }
+
+// public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
+// {
+//     public GVSMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new GVSMStorageTD(corpus);
+
+//     public override SearchItem[] GetSearchItems(ISRIVector<string, IWeight> query, int snippetLen)
+//     { 
+
+//     }
+
+//     public static ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
+//     {
+//         ProcesedDocument results = new ProcesedDocument(docs);
+
+//         SRIVectorLinked<string, IWeight> query = new SRIVectorLinked<string, IWeight>();
+//         int modalFrec = results.MaxBy(x => x.Item2).Item2;
+
+//         foreach ((string, int) item in results)
+//             query.Add(item.Item1, new QueryVSMWeight(item.Item2, modalFrec));
+//         return query;
+//     }
+// }
