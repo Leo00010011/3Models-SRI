@@ -29,6 +29,12 @@ public class LazyKMP : LazyMatcher
         }
     }
 
+    public bool AtFinalState
+    {
+        get;
+        private set;
+    }
+
     private int indexToMatch;
 
     readonly private string pattern;
@@ -58,16 +64,29 @@ public class LazyKMP : LazyMatcher
 
     public bool MatchStep(char step)
     {
+        bool result = false;
         while(indexToMatch > 0 && pattern[indexToMatch] != step)
             indexToMatch = pi[indexToMatch - 1];
         if(pattern[indexToMatch] == step)
+            result = true;
             indexToMatch++;
+        
         if(indexToMatch == pattern.Length)
         {
+            AtFinalState = true;
             indexToMatch = 0;
-            return true;
         }
-        return false;
+        else
+        {
+            AtFinalState = false;
+        }
+        
+        return result;
+    }
+
+    public bool PeekStep(char step)
+    {
+        return pattern[indexToMatch] == step;
     }
 
     public bool Match(IEnumerable<char> text)

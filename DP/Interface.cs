@@ -54,7 +54,14 @@ public interface LazyMatcher
         get;
     }
 
+    bool AtFinalState
+    {
+        get;
+    }
+    
     bool MatchStep(char step);
+
+    bool PeekStep(char step);
 
     bool Match(IEnumerable<char> text);
 
