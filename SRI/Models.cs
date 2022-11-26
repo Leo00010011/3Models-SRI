@@ -400,24 +400,24 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
     }
     public SearchItem[] GetSearchItems(ISRIVector<string, int> query, int snippetLen = 30)
     {
-        ((VSMStorageTermDoc)Storage!).UpdateDocs(); /*analizar si es null*/ 
+        ((VSMStorageTD)Storage!).UpdateDocs(); /*analizar si es null*/ 
         SearchItem[] result = new SearchItem[Storage.Count];
         bool[][] score = new bool[Storage.Count][] ;
         int index = 0;
         foreach (var item in query)
         {
-            foreach (var item1 in ((VSMStorageTermDoc)Storage!)[item.Item1])
+            foreach (var item1 in ((VSMStorageTD)Storage!)[item.Item1])
             {
-                if(score[item1.Item1] == null) score[item1.Item1] = new bool[query.Count];
-                score[item1.Item1][index] = true;
+                var value = (Storage as VSMStorageTD)!.DocsFrecModal[item1.Item1].Item1;
+                if(score[value] == null) score[value] = new bool[query.Count];
+                score[value][index] = true;
             }
             index++;
         }
         index = 0;
-        foreach (var item in ((VSMStorageTermDoc)Storage).GetAllDocs())
+        foreach (var item in ((VSMStorageTD)Storage).GetAllDocs())
         {
-            result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), (evaluate((score[index] != null? score[index]: new bool[query.Count]), 0)? 1:0) );
-            index++;
+            result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), (evaluate(score[index++], 0)? 1:0) );
         }
         return result;
     }
