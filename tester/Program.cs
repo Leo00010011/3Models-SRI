@@ -14,13 +14,16 @@ namespace Test;
 
 
 
-public class CranDocSpliter : IEnumerable<IDocument>
+public class DocSpliter : IEnumerable<IDocument>
 {
-    StreamReader reader;
+    readonly string collection_path;
 
-    public CranDocSpliter(string cran_path)
+    readonly ICreator<ILazyMatcher> matcherCreator;
+
+    public DocSpliter(string collectionPath, ICreator<ILazyMatcher> matcherCreator)
     {
-        
+        this.collection_path = collectionPath;
+        this.matcherCreator = matcherCreator;
     }
 
     public IEnumerator<IDocument> GetEnumerator()
@@ -34,72 +37,92 @@ public class CranDocSpliter : IEnumerable<IDocument>
     }
 }
 
-public class CranDocSpliterEnumerator : IEnumerator<IDocument>
+
+public class EmbebedDoc : Document
 {
-    public IDocument Current => throw new NotImplementedException();
-
-    object IEnumerator.Current => this.Current;
-
-    StreamReader sharedReader = null;
-
-    readonly string cran_path;
-
-    public CranDocSpliterEnumerator(string cran_path)
+    public string Id 
     {
-        this.cran_path = cran_path;
+        get;
+        private set;
     }
 
-    public void Dispose()
+    public override IEnumerable<char> Name
     {
-        if(sharedReader != null)
+        get
         {
-            sharedReader.Dispose();
-            sharedReader = null;
+            
         }
     }
 
-    public bool MoveNext()
+    readonly ICreator<ILazyMatcher> matcherCreator;
+
+    readonly Func<IEnumerable<char>,ParsedInfo> parser;
+    
+    ParsedInfo info;
+
+
+    public int InitPos
     {
-        throw new NotImplementedException();
+        get;
+        private set;
     }
 
-    public void Reset()
+    public int LastPos
     {
-        throw new NotImplementedException();
+        get;
+        private set;
     }
 
-    class CranDocument : IDocument
+    public EmbebedDoc(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser) :base(collectionPath,parser)
     {
-        public string Id => throw new NotImplementedException();
+        
+        this.Id = collectionPath;
+        this.matcherCreator = matcherCreator;
+        this.InitPos = -1;
+        this.LastPos = 0;
+        this.parser = parser;
+        
+    }
 
-        public IEnumerable<char> Name => throw new NotImplementedException();
+    public EmbebedDoc(string collectionPath, ICreator<ILazyMatcher> matcherCreator, int initPos, Func<IEnumerable<char>,ParsedInfo> parser) : base(collectionPath,parser)
+    {
+        this.Id = collectionPath;
+        this.matcherCreator = matcherCreator;
+        this.InitPos = initPos;
+        this.LastPos = 0;
+        this.parser = parser;
+    }
 
-        public IEnumerator<char> GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
+    public override IEnumerator<char> GetEnumerator()
+    {
+        StreamReader reader = readerGiver.Get();
+        ILazyMatcher matcher = matcherCreator.Create();
+        
+    }
 
-        public IEnumerable<char> GetSnippet(int snippetLen)
-        {
-            throw new NotImplementedException();
-        }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return this.GetEnumerator();
+    }
 
-        public stateDoc GetState()
-        {
-            throw new NotImplementedException();
-        }
+    StreamReader GetStreamReaderAtInitPos()
+    {
 
-        public void UpdateDateTime()
-        {
-            throw new NotImplementedException();
-        }
+    }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
+    public override IEnumerable<char> GetSnippet(int snippetLen)
+    {
+        if (info is null) info = parser(this);
+        StreamReader reader = GetStreamReaderAtInitPos();
+        int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
+        foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
+            yield return item;
+        reader.Close();
     }
 }
+
+
+    
 
 public class Program
 {
@@ -210,47 +233,57 @@ public class Program
 
     public static IEnumerable<string> TestMatchStep(ILazyMatcher matcher,IEnumerable<char> text, int length)
     {
+        Console.WriteLine("Dentro de test");
         char[] arr = new char[length];
         int index = 0;
         int iter = 0;
-            foreach(char step in text)
+        foreach(char step in text)
+        {
+            iter++;
+            Console.WriteLine(iter);
+            if(matcher.MatchStep(step))
             {
-                iter++;
-                Console.WriteLine(iter);
-                if(matcher.MatchStep(step))
+                arr[index] = step;
+                index++;
+                if(matcher.AtFinalState)
                 {
-                    arr[index] = step;
-                    index++;
-                    if(matcher.AtFinalState)
-                    {
-                        yield return new String(arr);
-                    }
-                }
-                else
-                {
-                    index = 0;
+                    yield return new String(arr);
+                    Console.ReadLine();
                 }
             }
+            else
+            {
+                index = 0;
+            }
+        }
     }
 
-    public static void ProbeOfPattern(IEnumerable<char> cran)
+    public static void PrintSomeThing()
+    {
+        Console.WriteLine("Something");
+    }
+
+    public static bool ProbeOfPattern(IEnumerable<char> cran)
     {
         int skip = 1042;
         int take = 1048;
         string text = String.Concat(cran.Take(take).Skip(skip));
-        var temp = text.ToArray();
-        Console.WriteLine(text);
+        bool result = new EndCranMatcher().Match(text);
+        return result;
     }
 
     public static void Main(string[] args)
     {
-        using(var doc_reader = new StreamReader(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\cran\cran.all.1400"))
+        // using(var doc_reader = new StreamReader(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\cran\cran.all.1400"))
+        // {
+        //     Console.WriteLine(doc_reader.BaseStream);
+        // }
+        var doc = new Document("C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400",DummyParser);        
+        var matcher = new EndCranMatcher();
+        foreach(string end in TestMatchStep(matcher,doc,10))
         {
-            Console.WriteLine(doc_reader.BaseStream);
+            Console.WriteLine(end);
         }
-        
-        //var doc = new Document("C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400",DummyParser);        
-        //var matcher = new EndCranMatcher();
         
     }
 

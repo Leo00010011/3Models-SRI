@@ -49,6 +49,35 @@ public static class Utils
         if (currentTerm != null)
             yield return String.Concat(currentTerm);
     }
+
+    public static IEnumerable<string> GetTermsToLower(IEnumerable<char> text)
+    {
+        LinkedList<char>? currentTerm = null;
+        foreach (char item in text)
+        {
+            if (Char.IsLetterOrDigit(item))
+            {
+                if (currentTerm == null)
+                    currentTerm = new LinkedList<char>();
+                currentTerm.AddLast(Char.ToLower(item));
+            }
+            else
+            {
+                if (currentTerm != null)
+                {
+                    yield return String.Concat(currentTerm);
+                    currentTerm = null;
+                }
+            }
+        }
+        if (currentTerm != null)
+            yield return String.Concat(currentTerm);
+    }
+}
+
+public interface ICreator<T>
+{
+    T Create();
 }
 
 public class ParsedInfo

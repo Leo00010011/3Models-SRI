@@ -184,12 +184,29 @@ public class EndCranMatcher : ILazyMatcher
 
     public bool Match(string text)
     {
-        throw new NotImplementedException();
+        if(text.Length < 4)
+        {
+            return false;
+        }
+        return Match(text);
     }
 
     public bool Match(IEnumerable<char> text)
     {
-        throw new NotImplementedException();
+        indexToMatch = 0;
+        matchFunc = MatchFirstPattern;
+        peekFunc = PeekFirstPattern;
+        AtFinalState = false;
+        foreach(char item in text)
+        {
+            MatchStep(item);
+        }
+        bool result = AtFinalState;
+        indexToMatch = 0;
+        matchFunc = MatchFirstPattern;
+        peekFunc = PeekStep;
+        AtFinalState = false;
+        return result;
     }
 
     public bool PeekStep(char step)
@@ -309,9 +326,9 @@ public class Document : IDocument
         this.parser = parser;
     }
 
-    public string Id { get; private set; }
+    public virtual string Id { get; private set; }
 
-    public IEnumerable<char> Name
+    public virtual IEnumerable<char> Name
     {
         get
         {
@@ -323,13 +340,13 @@ public class Document : IDocument
         }
     }
 
-    private IEnumerable<char> GetChars(StreamReader reader)
+    protected virtual IEnumerable<char> GetChars(StreamReader reader)
     {
         while (!reader.EndOfStream)
-            yield return char.ToLower((char)reader.Read());
+            yield return (char)reader.Read();
     }
 
-    private IEnumerable<char> GetEnumerable()
+    protected virtual IEnumerable<char> GetEnumerable()
     {
         StreamReader reader = new StreamReader(Id);
         foreach (var item in GetChars(reader))
@@ -337,7 +354,7 @@ public class Document : IDocument
         reader.Close();
     }
 
-    public IEnumerable<char> GetSnippet(int snippetLen)
+    public virtual IEnumerable<char> GetSnippet(int snippetLen)
     {
         if (info is null) info = parser(this);
         StreamReader reader = new StreamReader(Id);
@@ -347,15 +364,16 @@ public class Document : IDocument
         reader.Close();
     }
 
-    public stateDoc GetState()
+    public virtual stateDoc GetState()
     {
         if (File.Exists(Id)) return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(Id))) ? stateDoc.notchanged : stateDoc.changed;
         return stateDoc.deleted;
     }
 
-    public void UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(Id);
+    public virtual void  UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(Id);
 
-    public IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
+    public virtual IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
+    
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerable().GetEnumerator();
 
     public override bool Equals(object? obj)
@@ -400,7 +418,7 @@ public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
     {
         frecs = new Dictionary<string, int>();
 
-        foreach (string item in Utils.GetTerms(Result))
+        foreach (string item in Utils.GetTermsToLower(Result))
         {
             if (!Utils.GetStopWords().Contains(item))
             {
