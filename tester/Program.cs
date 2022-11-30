@@ -11,7 +11,7 @@ using System.Collections;
 
 namespace Test;
 
-
+#nullable disable
 
 
 public class DocSpliter : IEnumerable<IDocument>
@@ -40,19 +40,69 @@ public class DocSpliter : IEnumerable<IDocument>
 
 public class EmbebedDoc : Document
 {
-    public string Id 
+    class EmbebedDocEnumerator : IEnumerator<char>
     {
-        get;
-        private set;
+        bool finished;
+        public char Current 
+        {
+            get;
+            private set;
+        }
+
+        object IEnumerator.Current => this.Current;
+
+        EmbebedDoc father;
+
+        public EmbebedDocEnumerator(EmbebedDoc father)
+        {
+            this.father = father;
+        }
+
+        public void Dispose()
+        {
+            
+        }
+
+        public bool MoveNext()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Reset()
+        {
+            throw new NotImplementedException();
+        }
     }
+
+    public override string Id 
+    {
+        get
+        {
+            return id;
+        }
+    }
+
+    string id;
+
 
     public override IEnumerable<char> Name
     {
         get
         {
-            
+            if (info is null)
+            {
+                var text = GetChars(GetStreamReaderAtInitPos());
+                info = parser(text);
+            }
+            StreamReader reader = GetStreamReaderAtInitPos();
+            foreach (var item in GetChars(reader).Skip(info.TitleInit).Take(info.TitleLen))
+                yield return item;
+            reader.Close();
         }
     }
+
+    LinkedList<(StreamReader,ILazyMatcher)> NotFinishedReader;
+    LinkedList<StreamReader> FinishedReader;
 
     readonly ICreator<ILazyMatcher> matcherCreator;
 
@@ -61,13 +111,13 @@ public class EmbebedDoc : Document
     ParsedInfo info;
 
 
-    public int InitPos
+    public long InitPos
     {
         get;
         private set;
     }
 
-    public int LastPos
+    public long LastPos
     {
         get;
         private set;
@@ -76,7 +126,7 @@ public class EmbebedDoc : Document
     public EmbebedDoc(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser) :base(collectionPath,parser)
     {
         
-        this.Id = collectionPath;
+        this.id = collectionPath;
         this.matcherCreator = matcherCreator;
         this.InitPos = -1;
         this.LastPos = 0;
@@ -86,33 +136,65 @@ public class EmbebedDoc : Document
 
     public EmbebedDoc(string collectionPath, ICreator<ILazyMatcher> matcherCreator, int initPos, Func<IEnumerable<char>,ParsedInfo> parser) : base(collectionPath,parser)
     {
-        this.Id = collectionPath;
+        this.id = collectionPath;
         this.matcherCreator = matcherCreator;
         this.InitPos = initPos;
         this.LastPos = 0;
         this.parser = parser;
     }
 
-    public override IEnumerator<char> GetEnumerator()
+    public void OfferNextDocStreamReader()
     {
-        StreamReader reader = readerGiver.Get();
-        ILazyMatcher matcher = matcherCreator.Create();
         
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
+    public void RecieveFinishedReader(StreamReader reader)
     {
-        return this.GetEnumerator();
+        FinishedReader.Append(reader);
+    }
+
+    public static void MoveToEndOfDoc(StreamReader reader, ILazyMatcher matcherClon)
+    {
+        foreach(char item in GetChars(reader))
+        {
+            matcherClon.MatchStep(item);
+            if(matcherClon.AtFinalState)
+                break;
+        }
+    }
+
+
+    public void RecieveNOTFinishedReader(StreamReader reader, ILazyMatcher matcherClon)
+    {
+        if(InitPos == -1)
+        {
+            MoveToEndOfDoc(reader,matcherClon);
+            InitPos = reader.BaseStream.Position;
+        }
+        else
+        {
+            reader.BaseStream.Seek(InitPos - reader.BaseStream.Position,SeekOrigin.Begin);
+        }
+        FinishedReader.Append(reader);
+    }
+
+    public override IEnumerator<char> GetEnumerator()
+    {   
+        return new EmbebedDocEnumerator(this);
     }
 
     StreamReader GetStreamReaderAtInitPos()
     {
-
+        return new StreamReader("String.Concat(Document.GetChars(reader).Take(15))");
     }
 
     public override IEnumerable<char> GetSnippet(int snippetLen)
     {
-        if (info is null) info = parser(this);
+        if (info is null)
+        {
+            var text = GetChars(GetStreamReaderAtInitPos());
+            info = parser(text);
+        }
         StreamReader reader = GetStreamReaderAtInitPos();
         int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
         foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
@@ -279,11 +361,14 @@ public class Program
         //     Console.WriteLine(doc_reader.BaseStream);
         // }
         var doc = new Document("C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400",DummyParser);        
-        var matcher = new EndCranMatcher();
-        foreach(string end in TestMatchStep(matcher,doc,10))
-        {
-            Console.WriteLine(end);
-        }
+        var reader = new StreamReader("C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400");
+        Console.WriteLine("Recien creado: " + reader.BaseStream.Position.ToString());
+        char item = (char)reader.Read();
+        System.Console.WriteLine("Después de leer una posición " + reader.BaseStream.Position.ToString());
+        reader.BaseStream.Seek(1042, SeekOrigin.Begin);
+        var temp = String.Concat(Document.GetChars(reader).Take(15)).ToArray();
+        Console.WriteLine("Después de hacer el seek " + reader.BaseStream.Position);
+        Console.ReadLine();
         
     }
 

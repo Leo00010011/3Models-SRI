@@ -340,7 +340,7 @@ public class Document : IDocument
         }
     }
 
-    protected virtual IEnumerable<char> GetChars(StreamReader reader)
+    public static IEnumerable<char> GetChars(StreamReader reader)
     {
         while (!reader.EndOfStream)
             yield return (char)reader.Read();
@@ -374,7 +374,7 @@ public class Document : IDocument
 
     public virtual IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
     
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerable().GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
     public override bool Equals(object? obj)
     {
