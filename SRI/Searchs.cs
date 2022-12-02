@@ -5,6 +5,44 @@ using DP.Interface;
 
 namespace SRI;
 
+public class MinTermWeight : IWeight
+{
+    public MinTermWeight(int index, double weight)
+    {
+        Index = index;
+        Weight = weight;
+    }
+
+    public int Index { get; private set; }
+
+    public double Weight { get; private set; }
+
+    public override bool Equals(object? obj) => obj is MinTermWeight weight && Index == weight.Index;
+
+    public override int GetHashCode() => HashCode.Combine(Index);
+}
+
+public class MinTerm<T> : IEnumerable<T>
+{
+    private IEnumerable<T> terms;
+    private int hashcode;
+
+    public MinTerm(IEnumerable<T> terms)
+    {
+        this.terms = terms;
+        hashcode = terms.Select(x => (x != null) ? x.GetHashCode() : 0).Sum();
+    }
+
+    public override bool Equals(object? obj) => obj is MinTerm<T> term && terms.Count() == term.terms.Count() && 
+                                                terms.Zip(term.terms).All(x => object.Equals(x.First, x.Second));
+
+    public IEnumerator<T> GetEnumerator() => terms.GetEnumerator();
+
+    public override int GetHashCode() => hashcode;
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
 public class QueryVSMWeight : IWeight
 {
     public double frec;
@@ -38,6 +76,7 @@ public class SRIVectorLinked<K, V> : ISRIVector<K, V> where K : notnull
     LinkedList<(K, V)> vector;
 
     public SRIVectorLinked() => this.vector = new LinkedList<(K, V)>();
+    public SRIVectorLinked(IEnumerable<KeyValuePair<K, V>> colection) => this.vector = new LinkedList<(K, V)>(colection.Select(x => (x.Key, x.Value)));
 
     public V this[K index]
     {
@@ -88,6 +127,7 @@ public class SRIVectorDic<K, V> : ISRIVector<K, V> where K : notnull
     Dictionary<K, V> vector;
 
     public SRIVectorDic() => this.vector = new Dictionary<K, V>();
+    public SRIVectorDic(IEnumerable<KeyValuePair<K, V>> colection) => this.vector = new Dictionary<K, V>(colection);
 
     public V this[K index] { get { return vector[index]; } set { vector[index] = value; } }
 
@@ -104,7 +144,16 @@ public class SRIVectorDic<K, V> : ISRIVector<K, V> where K : notnull
 
     public bool ContainsKey(K key) => vector.ContainsKey(key);
 
-    public void CopyTo((K, V)[] array, int arrayIndex) => throw new NotImplementedException();
+    public void CopyTo((K, V)[] array, int arrayIndex)
+    {
+        int count = 0;
+        foreach (var item in vector)
+        {
+            if(array.Length <= count) break;
+            array[count] = (item.Key, item.Value);
+            count++;
+        }
+    }
 
     public bool Remove((K, V) item) => vector.Remove(item.Item1);
 

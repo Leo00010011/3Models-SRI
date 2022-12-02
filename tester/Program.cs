@@ -6,7 +6,6 @@ using SRI;
 using SRI.Interface;
 using Utils;
 
-
 // namespace Test;
 // public static class TestingMethods
 // {
@@ -151,7 +150,7 @@ using Utils;
 
 
 Stopwatch cloc = new Stopwatch();
-IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
+IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20 Newsgroups\20news-18828");
 
 LinkedList<IDocument> docs = new LinkedList<IDocument>();
 foreach (var item in docsID)
@@ -167,27 +166,24 @@ Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
 cloc.Reset();
 
 cloc.Start();
-WMTermDoc vectorial = new GVSMTermDoc(docs);
+GVSMTermDoc vectorial = new GVSMTermDoc(docs);
 cloc.Stop();
 
 Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
 cloc.Reset();
 
-SRIVectorDic<string, IWeight> query = new SRIVectorDic<string, IWeight>();
+// cloc.Start();
+// SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
+// cloc.Stop();
 
-QueryVSMWeight hoW = new QueryVSMWeight(2, 2);
-query.Add("house", hoW);
+// Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
-cloc.Start();
-SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(query, 30));
-cloc.Stop();
+// foreach (var item in results.Select(x => x.Title))
+// {
+//     System.Console.WriteLine(SearchItem.Convert(item));
+// }
 
-Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
-foreach (var item in results.Select(x => x.Title))
-{
-    System.Console.WriteLine(SearchItem.Convert(item));
-}
 
 char ReadTest(IEnumerable<IDocument> docs)
 {
@@ -201,3 +197,5 @@ char ReadTest(IEnumerable<IDocument> docs)
     }
     return a;
 }
+
+System.Console.ReadKey();

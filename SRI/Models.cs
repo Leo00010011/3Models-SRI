@@ -79,7 +79,7 @@ public class VSMDocTerm : WMDocTerm, ISRIModel<IDocument, string, IWeight, strin
 {
     public VSMDocTerm(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
 
-    public static ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
+    public ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
     {
         ProcesedDocument results = new ProcesedDocument(docs);
 
@@ -142,23 +142,43 @@ public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDo
 
 public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public GVSMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new GVSMStorageTD(corpus);
+    public GVSMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new GVSMStorageDT(corpus);
 
-    public override SearchItem[] GetSearchItems(ISRIVector<string, IWeight> query, int snippetLen)
+    public SearchItem[] GetSearchItems(double[] query, int snippetLen)
     {
-        throw new NotImplementedException();
+        ((GVSMStorageDT)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0;
+        SearchItem[] result = new SearchItem[Storage.Count];
+
+        foreach (var item in ((GVSMStorageDT)Storage))
+        {
+            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, (Storage as GVSMStorageDT)![item]));
+        }
+        return result;
     }
 
-    public static ISRIVector<string, IWeight> CreateQuery(IEnumerable<char> docs)
+    protected double SimilarityRate(double[] doc1, double[] doc2)
+    {
+        double normaDoc1 = 0, normaDoc2 = 0, scalarMul = 0;
+        foreach (var tuple in doc1.Zip(doc2))
+        {
+            normaDoc1 += Math.Pow(tuple.First, 2);
+            normaDoc2 += Math.Pow(tuple.Second, 2);
+
+            scalarMul += tuple.First * tuple.Second;
+        }
+        normaDoc1 = Math.Sqrt(normaDoc1);
+        normaDoc2 = Math.Sqrt(normaDoc2);
+
+        return scalarMul / (normaDoc1 * normaDoc2);
+    }
+
+    public double[] CreateQuery(IEnumerable<char> docs)
     {
         ProcesedDocument results = new ProcesedDocument(docs);
-
-        SRIVectorLinked<string, IWeight> query = new SRIVectorLinked<string, IWeight>();
-        int modalFrec = results.MaxBy(x => x.Item2).Item2;
-
+        var temp = (new double[(Storage as GVSMStorageDT)!.DocsLength] as IEnumerable<double>);
         foreach ((string, int) item in results)
-            query.Add(item.Item1, new QueryVSMWeight(item.Item2, modalFrec));
-        return query;
+            temp = temp.Zip((Storage as GVSMStorageDT)!.GetKey1Vector(item.Item1)).Select(x => x.First + x.Second);
+        return temp.ToArray();
     }
 }
 

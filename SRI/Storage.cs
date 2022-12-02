@@ -1,5 +1,6 @@
 namespace SRI;
 
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using DP;
@@ -286,125 +287,20 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
         needUpdate = false;
     }
 
-    internal IEnumerable<(IDocument, double)> GetAllDocs() => DocsFrecModal.Select(x => (x.Key, x.Value.Item2));
-}
-
-public class GVSMStorageTD : VSMStorageTD, IStorage<string, IDocument, IWeight, IDocument>, ICollection<IDocument>
-{
-    private SRIVectorDic<string, ISRIVector<string, int>> weightTerms;
-    private SRIVectorDic<int, ISRIVector<int, int>> weightDocs;
-
-    public GVSMStorageTD(IEnumerable<IDocument>? corpus) : base(null)
-    {
-        weightTerms = new SRIVectorDic<string, ISRIVector<string, int>>();
-        weightDocs = new SRIVectorDic<int, ISRIVector<int, int>>();
-
-        if (corpus is null) return;
-
-        foreach (var item in corpus)
-            this.Add(item);
-        UpdateDocs();
-    }
-
-    public new ISRIVector<int, int> GetKey1Vector(IDocument index) => weightDocs[DocsFrecModal[index].Item1];
-
-    public new ISRIVector<string, int> GetKey2Vector(string doc) => weightTerms[doc];
-
-    private IEnumerable<(string, IWeight)> GenDocVector(IDocument index) => MatrixStorage.Where(x => x.Item2.ContainsKey(index)).Select(x => (x.Item1, x.Item2[index]));
-
-    private SRIVectorDic<string, int> GenTermsIndex()
-    {
-        SRIVectorDic<string, int> result = new SRIVectorDic<string, int>();
-        int count = 0;
-        for (var item = MatrixStorage.GetEnumerator(); item.MoveNext(); count++)
-        {
-            result.Add(item.Current.Item1, count);
-            count++;
-        }
-
-        return result;
-    }
-
-    public override void UpdateAllWeight()
-    {
-        base.UpdateAllWeight();
-        needUpdate = true;
-
-        SRIVectorLinked<int, string> docspattern = new SRIVectorLinked<int, string>();
-        SRIVectorDic<string, int> termsIndex = GenTermsIndex();
-
-        foreach (var item1 in DocsFrecModal)
-        {
-            int count = 0; string index = "";
-            foreach (var item2 in GenDocVector(item1.Key))
-            {
-                int value = termsIndex[item2.Item1];
-                index += '0'.RepeatChar(value - count) + "1";
-                count = value;
-            }
-
-            docspattern.Add((item1.Value.Item1, index));
-        }
-
-        SRIVectorDic<string/*term*/, ISRIVector<string/*doc*/, int>> resultTerms = new SRIVectorDic<string, ISRIVector<string, int>>();
-        SRIVectorDic<int/*doc*/, ISRIVector<int/*term*/, int>> resultDocs = new SRIVectorDic<int, ISRIVector<int, int>>();
-
-        foreach (var item1 in MatrixStorage)
-        {
-            var index = termsIndex[item1.Item1];
-            var valueTerm = new SRIVectorDic<string, int>();
-
-            foreach (var item2 in item1.Item2)
-            {
-                var docindex = DocsFrecModal[item2.Item1].Item1;
-                var pattern = docspattern[docindex];
-
-                if (!valueTerm.ContainsKey(pattern))
-                {
-                    valueTerm.Add((pattern, 1));
-                }
-                else
-                {
-                    valueTerm[pattern] += 1;
-                }
-
-                if (!resultDocs.ContainsKey(docindex))
-                {
-                    var docs = new SRIVectorDic<int, int>();
-                    docs.Add((index, 1));
-                    resultDocs.Add(docindex, docs);
-                }
-                else
-                {
-                    var docs = resultDocs[docindex];
-                    if (docs!.ContainsKey(index))
-                    {
-                        docs.Add(index, 1);
-                    }
-                    else
-                    {
-                        docs[index] += 1;
-                    }
-                }
-            }
-            resultTerms.Add(item1.Item1, valueTerm);
-        }
-
-        weightTerms = resultTerms;
-        weightDocs = resultDocs;
-        needUpdate = false;
-    }
+    public IEnumerable<(IDocument, double)> GetAllDocs() => DocsFrecModal.Select(x => (x.Key, x.Value.Item2));
 }
 
 public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, IDocument>, ICollection<IDocument>
 {
-    private SRIVectorDic<string, ISRIVector<string, int>> weightTerms;
-    private SRIVectorDic<int, ISRIVector<int, int>> weightDocs;
+    public new double[] this[IDocument index] => weightDocs[index];
+    private SRIVectorDic<string, double[]> weightTerms;
+    private SRIVectorDic<IDocument, double[]> weightDocs;
+    private MinTerm<int>[]? docspattern;
 
     public GVSMStorageDT(IEnumerable<IDocument>? corpus) : base(null)
     {
-        weightTerms = new SRIVectorDic<string, ISRIVector<string, int>>();
-        weightDocs = new SRIVectorDic<int, ISRIVector<int, int>>();
+        weightTerms = new SRIVectorDic<string, double[]>();
+        weightDocs = new SRIVectorDic<IDocument, double[]>();
 
         if (corpus is null) return;
 
@@ -413,76 +309,103 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
         UpdateDocs();
     }
 
-    public new ISRIVector<string, int> GetKey1Vector(string index) => weightTerms[index];
+    public int DocsLength => docspattern!.Length;
 
-    public new ISRIVector<int, int> GetKey2Vector(IDocument doc) => weightDocs[DocsFrecModal[doc]];
+    public new double[] GetKey1Vector(string index) => weightTerms[index];
+
+    public new double[] GetKey2Vector(IDocument doc) => weightDocs[doc];
+
+    private ISRIVector<string, ISRIVector<(IDocument, int), SortedSet<MinTermWeight>>> Trasp(ISRIVector<IDocument, ISRIVector<string, IWeight>> matrix)
+    {
+        ISRIVector<IDocument, int> vector = GenMinTerms();
+        SRIVectorDic<string, ISRIVector<(IDocument, int), SortedSet<MinTermWeight>>> trasp = new SRIVectorDic<string, ISRIVector<(IDocument, int), SortedSet<MinTermWeight>>>();
+
+        foreach (var doc in matrix)
+        {
+            SortedSet<MinTermWeight> docVector = new();
+            foreach (var term in doc.Item2)
+            {
+                if (!trasp.ContainsKey(term.Item1))
+                {
+                    var termVector = new SRIVectorDic<(IDocument, int), SortedSet<MinTermWeight>>();
+                    termVector.Add((doc.Item1, vector[doc.Item1]), docVector);
+                    trasp.Add(term.Item1, termVector);
+                }
+                else
+                {
+                    trasp[term.Item1].Add((doc.Item1, vector[doc.Item1]), docVector);
+                }
+            }
+        }
+
+        return trasp;
+    }
 
     public override void UpdateAllWeight()
     {
         base.UpdateAllWeight();
         needUpdate = true;
 
-        SRIVectorLinked<int, string> docspattern = new SRIVectorLinked<int, string>();
-
-        foreach (var item1 in MatrixStorage)
-        {
-            int count = 0; string index = "";
-            foreach (var item2 in item1.Item2)
-            {
-                int value = InvFrecTerms[item2.Item1].Item1;
-                index += /*'0'.RepeatChar(value - count) + */"1";
-                count = value;
-            }
-
-            docspattern.Add((DocsFrecModal[item1.Item1], index));
-        }
-
-        SRIVectorDic<string/*term*/, ISRIVector<string/*doc*/, int>> resultTerms = new SRIVectorDic<string, ISRIVector<string, int>>();
-        SRIVectorDic<int/*doc*/, ISRIVector<int/*term*/, int>> resultDocs = new SRIVectorDic<int, ISRIVector<int, int>>();
-
-        // foreach (var item1 in MatrixStorage)
+        var trasp = Trasp(MatrixStorage);
+        // var resultTerms = new SRIVectorDic<string, double[]>();
+        // foreach (var term in trasp)
         // {
-        //     var index = termsIndex[item1.Item1];
-        //     var valueTerm = new SRIVectorDic<string, int>();
-
-        //     foreach (var item2 in item1.Item2)
+        //     var termVector = new double[docspattern!.Length];
+        //     foreach (var doc in term.Item2)
         //     {
-        //         var docindex = DocsFrecModal[item2.Item1].Item1;
-        //         var pattern = docspattern[docindex];
+        //         termVector[doc.Item1.Item2] += 1;
+        //     }
 
-        //         if (!valueTerm.ContainsKey(pattern))
+        //     // var correction = Math.Sqrt(termVector.Select(value => Math.Pow(value, 2)).Sum());
+        //     // termVector = correction != 0 ? termVector.Select(value => value == 0 ? value : value / correction).ToArray() : termVector;
+            
+        //     var temp = termVector.Select((value, index) => (value, index)).Where(x => x.value != 0).ToArray();
+        //     foreach (var doc in term.Item2)
+        //     {
+        //         foreach (var item in temp)
         //         {
-        //             valueTerm.Add((pattern, 1));
-        //         }
-        //         else
-        //         {
-        //             valueTerm[pattern] += 1;
-        //         }
-
-        //         if (!resultDocs.ContainsKey(docindex))
-        //         {
-        //             var docs = new SRIVectorDic<int, int>();
-        //             docs.Add((index, 1));
-        //             resultDocs.Add(docindex, docs);
-        //         }
-        //         else
-        //         {
-        //             var docs = resultDocs[docindex];
-        //             if (docs!.ContainsKey(index))
-        //             {
-        //                 docs.Add(index, 1);
-        //             }
-        //             else
-        //             {
-        //                 docs[index] += 1;
-        //             }
+        //             doc.Item2[item.index] += item.value;
         //         }
         //     }
-        //     resultTerms.Add(item1.Item1, valueTerm);
+
+        //     resultTerms.Add(term.Item1, termVector);
         // }
 
-        weightTerms = resultTerms;
-        weightDocs = resultDocs;
+        // var resultDocs = new SRIVectorDic<IDocument, double[]>();
+        // foreach (var term in trasp)
+        // {
+        //     foreach (var doc in term.Item2)
+        //     {
+        //         if (!resultDocs.ContainsKey(doc.Item1.Item1)) continue;
+        //         else
+        //         {
+        //             resultDocs.Add(doc.Item1.Item1, doc.Item2);
+        //         }
+        //     }
+        // }
+
+        // weightTerms = resultTerms;
+        // weightDocs = resultDocs;
         needUpdate = false;
+    }
+
+    private SRIVectorDic<IDocument, int> GenMinTerms()
+    {
+        var trie = new Trie<int>(-1);
+        var docsindex = new SRIVectorDic<IDocument, int>();
+        var tempPattern = new SRIVectorDic<int, MinTerm<int>>();
+        foreach (var doc in MatrixStorage)
+        {
+            var temp = new LinkedList<int>();
+            foreach (var term in doc.Item2)
+                temp.AddLast(InvFrecTerms[term.Item1].Item1);
+            var index = trie.InsertTrie(temp);
+
+            if (!tempPattern.ContainsKey(index))
+                tempPattern.Add(index, new MinTerm<int>(temp));
+            docsindex.Add(doc.Item1, index);
+        }
+        docspattern = tempPattern.OrderBy(x => x.Item1).Select(x => x.Item2).ToArray();
+        return docsindex;
     }
 }

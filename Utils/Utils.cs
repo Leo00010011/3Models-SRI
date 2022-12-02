@@ -2,6 +2,11 @@
 
 public static class Utils
 {
+    public static void Apply<T>(this IEnumerable<T> colection, Action<T> func){
+        foreach (var item in colection)
+            func(item);
+    }
+
     public static string RepeatChar(this char character, int count = 1)
     {
         string result = "";
