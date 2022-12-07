@@ -10,7 +10,7 @@ public enum stateDoc
     notchanged
 }
 
-public class Document : IDocument
+public class Document : IDocument, IComparable
 {
     private ParsedInfo? info;
     private DateTime modifiedDateTime;
@@ -72,14 +72,14 @@ public class Document : IDocument
     public IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerable().GetEnumerator();
 
-    public override bool Equals(object? obj)
-    {
-        return obj is Document document &&
-               modifiedDateTime == document.modifiedDateTime &&
-               Id == document.Id;
-    }
+    public override bool Equals(object? obj) => obj is Document document && modifiedDateTime == document.modifiedDateTime && Id == document.Id;
 
     public override int GetHashCode() => Id.GetHashCode();
+
+    public int CompareTo(object? obj)
+    {
+        return obj is Document document ? document.Id.CompareTo(Id) : throw new InvalidCastException();
+    }
 }
 
 public class ProcesedDocument : IResult<IEnumerable<char>, string, int>

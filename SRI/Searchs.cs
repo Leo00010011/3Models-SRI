@@ -15,11 +15,17 @@ public class MinTermWeight : IWeight
 
     public int Index { get; private set; }
 
-    public double Weight { get; private set; }
+    public double Weight { get; set; }
 
     public override bool Equals(object? obj) => obj is MinTermWeight weight && Index == weight.Index;
 
     public override int GetHashCode() => HashCode.Combine(Index);
+
+    public static MinTermWeight operator +(MinTermWeight a, double b)
+    {
+        a.Weight += b;
+        return a;
+    }
 }
 
 public class MinTerm<T> : IEnumerable<T>
@@ -33,7 +39,7 @@ public class MinTerm<T> : IEnumerable<T>
         hashcode = terms.Select(x => (x != null) ? x.GetHashCode() : 0).Sum();
     }
 
-    public override bool Equals(object? obj) => obj is MinTerm<T> term && terms.Count() == term.terms.Count() && 
+    public override bool Equals(object? obj) => obj is MinTerm<T> term && terms.Count() == term.terms.Count() &&
                                                 terms.Zip(term.terms).All(x => object.Equals(x.First, x.Second));
 
     public IEnumerator<T> GetEnumerator() => terms.GetEnumerator();
@@ -149,7 +155,7 @@ public class SRIVectorDic<K, V> : ISRIVector<K, V> where K : notnull
         int count = 0;
         foreach (var item in vector)
         {
-            if(array.Length <= count) break;
+            if (array.Length <= count) break;
             array[count] = (item.Key, item.Value);
             count++;
         }
