@@ -296,7 +296,7 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
 public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, IDocument>, ICollection<IDocument>
 {
     public new double[] this[IDocument index] => weightDocs[index];
-    
+
     [JsonInclude]
     private Dictionary<string, double[]> weightTerms;
     [JsonInclude]
@@ -353,54 +353,71 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
         needUpdate = true;
 
         var trasp = Trasp(MatrixStorage);
-        Dictionary<string, double[]> resultTerms = new();
-        Dictionary<IDocument, double[]> resultDocs = new();
+        Dictionary<string, IDictionary<int, double>> resultTerms = new();
+        Dictionary<IDocument, IDictionary<int, double>> resultDocs = new();
         Stopwatch prueba = new Stopwatch();
+        var last = prueba.Elapsed;
+        var lastfor = prueba.Elapsed;
+
         prueba.Start();
-        int count = 1;
-        var lasttime = prueba.Elapsed;
         foreach (var term in trasp)
         {
-            System.Console.WriteLine($"term {count}: time = {prueba.Elapsed - lasttime}");
-            double[] termVector = new double[docspattern!.Length];
+            SortedDictionary<int, double> termVector = new();
             foreach (var doc in term.Value)
             {
-                termVector[doc.Value] += 1;
+                if (!termVector.ContainsKey(doc.Value))
+                    termVector.Add(doc.Value, 1);
+                else
+                    termVector[doc.Value] += 1;
             }
+            if(termVector.Count / docspattern!.Length > 0.80) continue;
 
-            LinkedList<int> index = new();
+            var correction = Math.Sqrt(termVector.Select(x => Math.Pow(x.Value, 2)).Sum());
 
-            for (int i = 0; i < termVector.Length; i++)
+            foreach (var item in termVector.Keys.ToArray())
             {
-                if(termVector[i] > 0)
-                    index.AddLast(i);
-            }
-
-            var correction = Math.Sqrt(termVector.Select(x => Math.Pow(x, 2)).Sum());
-            
-            for (int i = 0; i < termVector.Length; i++)
-            {
-                termVector[i] /= correction;
-            }
-
-            foreach (var doc in term.Value)
-            {
-                bool containsDocKey = resultDocs.ContainsKey(doc.Key);
-
-                double[] docVector = !containsDocKey ? new double[docspattern!.Length] : resultDocs[doc.Key];
-                foreach (var minterm in index)
-                {
-                    docVector[doc.Value] += termVector[minterm];
-                }
-
-                if (!containsDocKey) resultDocs.Add(doc.Key, docVector);
+                termVector[item] /= correction;
             }
             resultTerms.Add(term.Key, termVector);
-            count ++;
-            lasttime = prueba.Elapsed;
         }
+        var a = resultTerms.Values.Select(x => x.Count).Max();
+
+        System.Console.WriteLine($"end terms: time = {lastfor = last = prueba.Elapsed}");
+        var count = 0;
+        var count2 = 1;
+        foreach (var doc in MatrixStorage)
+        {
+
+            if (count == 1000)
+            {
+                System.Console.WriteLine($"docs {count2 * count}: time = {prueba.Elapsed - last}");
+                last = prueba.Elapsed;
+                count = 0;
+                count2++;
+            }
+
+            double[] docVector = new double[docspattern!.Length];
+            foreach (var item in doc.Value)
+            {
+                if (!resultTerms.ContainsKey(item.Key)) continue;
+                foreach (var minterm in resultTerms[item.Key])
+                {
+                    docVector[minterm.Key] += minterm.Value;
+                }
+            }
+
+            SortedDictionary<int, double> newDocVector = new();
+            foreach (var item in docVector.Select((Value, Key) => (Key, Value)).Where(x => x.Value > 0))
+            {
+                newDocVector.Add(item.Key, item.Value);
+            }
+
+            resultDocs.Add(doc.Key, newDocVector);
+            count++;
+        }
+
         prueba.Stop();
-        System.Console.WriteLine($"end test: time = {prueba.Elapsed}");
+        System.Console.WriteLine($"end docs: time = {prueba.Elapsed - lastfor}");
 
         // weightTerms = resultTerms;
         // weightDocs = resultDocs;

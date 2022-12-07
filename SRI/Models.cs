@@ -144,7 +144,7 @@ public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, ID
 {
     public GVSMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new GVSMStorageDT(corpus);
 
-    public SearchItem[] GetSearchItems(Dictionary<int, double> query, int snippetLen)
+    public SearchItem[] GetSearchItems(double[] query, int snippetLen)
     {
         ((GVSMStorageDT)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0;
         SearchItem[] result = new SearchItem[Storage.Count];
@@ -156,32 +156,32 @@ public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, ID
         return result;
     }
 
-    protected double SimilarityRate(Dictionary<int, double> doc1, Dictionary<int, double> doc2)
+    protected double SimilarityRate(double[] doc1, double[] doc2)
     {
         double normaDoc1 = 0, normaDoc2 = 0, scalarMul = 0;
-        foreach (var tuple in doc1)
+        for (int i = 0; i < doc1.Length; i++)
         {
-            normaDoc1 += Math.Pow(tuple.Value, 2);
-            scalarMul += tuple.Value * doc2[tuple.Key];
+            normaDoc1 += Math.Pow(doc1[i], 2);
+            scalarMul += doc1[i] * doc2[i];
         }
         normaDoc1 = Math.Sqrt(normaDoc1);
 
-        foreach (var tuple in doc2)
+        for (int i = 0; i < doc2.Length; i++)
         {
-            normaDoc2 += Math.Pow(tuple.Value, 2);
+            normaDoc2 += Math.Pow(doc2[i], 2);
         }
         normaDoc2 = Math.Sqrt(normaDoc2);
 
         return scalarMul / (normaDoc1 * normaDoc2);
     }
 
-    public Dictionary<int, double> CreateQuery(IEnumerable<char> docs)
+    public double[] CreateQuery(IEnumerable<char> docs)
     {
         ProcesedDocument results = new ProcesedDocument(docs);
-        Dictionary<int, double> temp = new();
+        double[] temp = new double[(Storage as GVSMStorageDT)!.DocsLength];
         foreach ((string, int) item1 in results)
         {
-            foreach (var item2 in (Storage as GVSMStorageDT)!.GetKey1Vector(item1.Item1))
+            foreach (var item2 in (Storage as GVSMStorageDT)!.GetKey1Vector(item1.Item1).Select((Value, Key) => (Key, Value)))
             {
                 temp[item2.Key] += item2.Value;
             }
