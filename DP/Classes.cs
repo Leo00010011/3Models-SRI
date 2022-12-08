@@ -173,11 +173,19 @@ public class ConsecutiveNumberMatcher : ILazyMatcher
     
 }
 
-public class EndCranMatcherCreator : ICreator<EndCranMatcher>
+public class EndCranMatcherCreator : ICreator<ILazyMatcher>
 {
-    public EndCranMatcher Create()
+    public ILazyMatcher Create()
     {
         return new EndCranMatcher();
+    }
+}
+
+public class EndReutersMatcherCreator : ICreator<ILazyMatcher>
+{
+    public ILazyMatcher Create()
+    {
+        return new LazyKMP("</REUTERS>");
     }
 }
 
