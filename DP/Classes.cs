@@ -3,6 +3,9 @@ using DP.Interface;
 using Utils;
 using System.Collections;
 
+#nullable disable
+
+
 public enum stateDoc
 {
     changed,
@@ -114,6 +117,11 @@ public class LazyKMP : ILazyMatcher
         result.indexToMatch = indexToMatch;
         return result;
     }
+
+    public void ResetState()
+    {
+        indexToMatch = 0;
+    }
 }
 
 public class ConsecutiveNumberMatcher : ILazyMatcher
@@ -157,18 +165,35 @@ public class ConsecutiveNumberMatcher : ILazyMatcher
         return Char.IsDigit(step);
     }
 
+    public void ResetState()
+    {
+        AtFinalState = false;
+    }
     
+}
+
+public class EndCranMatcherCreator : ICreator<EndCranMatcher>
+{
+    public EndCranMatcher Create()
+    {
+        return new EndCranMatcher();
+    }
 }
 
 public class EndCranMatcher : ILazyMatcher
 {
-    readonly string firstPattern = "\n.i ";
+    public enum State
+    {
+        firstPattern,
+        secondPattern,
+        thirdPattern
+    }
+
+    State state = State.firstPattern;
+    readonly string firstPattern = "\n.I ";
     readonly char thirdPattern = '\n';
 
     private int indexToMatch = 0;
-
-    private Func<char,bool> matchFunc;
-    private Func<char,bool> peekFunc;
 
     public bool AtFinalState
     {
@@ -176,11 +201,6 @@ public class EndCranMatcher : ILazyMatcher
         private set;
     }
 
-    public EndCranMatcher()
-    {
-        matchFunc = MatchFirstPattern;
-        peekFunc = PeekFirstPattern;
-    }
 
     public bool Match(string text)
     {
@@ -188,14 +208,13 @@ public class EndCranMatcher : ILazyMatcher
         {
             return false;
         }
-        return Match(text);
+        return Match((IEnumerable<char>)text);
     }
 
     public bool Match(IEnumerable<char> text)
     {
         indexToMatch = 0;
-        matchFunc = MatchFirstPattern;
-        peekFunc = PeekFirstPattern;
+        state = State.firstPattern;
         AtFinalState = false;
         foreach(char item in text)
         {
@@ -203,19 +222,36 @@ public class EndCranMatcher : ILazyMatcher
         }
         bool result = AtFinalState;
         indexToMatch = 0;
-        matchFunc = MatchFirstPattern;
-        peekFunc = PeekStep;
+        state = State.firstPattern;
         AtFinalState = false;
         return result;
     }
 
     public bool PeekStep(char step)
     {
-        return peekFunc(step);
+        switch(state)
+        {
+            case State.firstPattern:
+                return PeekFirstPattern(step);
+            case State.secondPattern:
+                return PeekSecondPattern(step);
+            case State.thirdPattern:
+                return PeekThirdPattern(thirdPattern);
+        }
+        return false;
     }
     public bool MatchStep(char step)
     {
-        return matchFunc(step);
+        switch(state)
+        {
+            case State.firstPattern:
+                return MatchFirstPattern(step);
+            case State.secondPattern:
+                return MatchSecondPattern(step);
+            case State.thirdPattern:
+                return MatchThirdPattern(thirdPattern);
+        }
+        return false;
     }
 
     private bool PeekFirstPattern(char step)
@@ -232,8 +268,7 @@ public class EndCranMatcher : ILazyMatcher
             indexToMatch++;
             if(indexToMatch == firstPattern.Length)
             {
-                matchFunc = MatchSecondPattern;
-                peekFunc = PeekSecondPattern;
+                state = State.secondPattern;
                 indexToMatch = 0;
             }
             return true;
@@ -261,17 +296,15 @@ public class EndCranMatcher : ILazyMatcher
         {
             if(PeekThirdPattern(step))
             {
-                peekFunc = PeekThirdPattern;
-                matchFunc = MatchThirdPattern;
+                state = State.thirdPattern;
                 indexToMatch = 0;
-                return matchFunc(step);
+                return MatchStep(step);
             }
             else
             {
-                peekFunc = PeekFirstPattern;
-                matchFunc = MatchFirstPattern;
+                state = State.firstPattern;
                 indexToMatch = 0;
-                return matchFunc(step);
+                return MatchStep(step);
             }
         }
     }
@@ -287,27 +320,32 @@ public class EndCranMatcher : ILazyMatcher
         if(thirdPattern == step)
         {
             indexToMatch = 0;
-            matchFunc = MatchFirstPattern;
-            peekFunc = PeekFirstPattern;
+            state = State.firstPattern;
             AtFinalState = true;
             return true;
         }
         else
         {
-            peekFunc = PeekFirstPattern;
-            matchFunc = MatchFirstPattern;
+            state = State.firstPattern;
             indexToMatch = 0;
-            return matchFunc(step);
+            return MatchStep(step);
         }
     }
 
     public ILazyMatcher CloneParsing()
     {
         var result = new EndCranMatcher();
-        result.matchFunc = matchFunc;
-        result.peekFunc = peekFunc;
+        result.state = state;
         result.AtFinalState = AtFinalState;
+        result.indexToMatch = 0;
         return result;
+    }
+
+    public void ResetState()
+    {
+        state = State.firstPattern;
+        AtFinalState = false;
+        indexToMatch = 0;
     }
 }
 
@@ -384,6 +422,344 @@ public class Document : IDocument
     }
 
     public override int GetHashCode() => Id.GetHashCode();
+}
+
+
+public class CollectionSplitter : IEnumerable<IDocument>
+{
+    public string Path
+    {
+        get;
+        private set;
+    }
+
+    ICreator<ILazyMatcher> matcherCreator;
+
+    Func<IEnumerable<char>,ParsedInfo> parser;
+
+    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser)
+    {
+        Path = collectionPath;
+        this.matcherCreator = matcherCreator;
+        this.parser = parser;
+    }
+
+    public IEnumerator<IDocument> GetEnumerator()
+    {
+        EmbebedDoc previousDoc = null;
+        EmbebedDoc current = null;
+        while(previousDoc == null || !previousDoc.IsFinal)
+        {
+            current = new EmbebedDoc(Path,matcherCreator,parser);
+            current.Server = previousDoc;
+            yield return current;
+            previousDoc = current;
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public class EmbebedDoc : Document
+{
+    class EmbebedDocEnumerator : IEnumerator<char>
+    {
+        public char Current 
+        {
+            get;
+            private set;
+        }
+
+        object IEnumerator.Current => this.Current;
+
+        bool finished = false;
+
+        bool isFirstMoveNext = true;
+
+        Stream stream;
+
+        ILazyMatcher matcher;
+
+        EmbebedDoc father;
+
+        bool disposed = false;
+
+        public EmbebedDocEnumerator(EmbebedDoc father, ILazyMatcher matcher)
+        {
+            this.father = father;
+            this.matcher = matcher;
+        }
+
+        public void Dispose()
+        {
+            if(!disposed)
+            {
+                //No se pasa en el caso de terminado pq se usume que se pasó en el moveNext que se llegó al final
+                if(!finished)
+                {
+                    father.RecieveNOTFinishedReader(stream,matcher.CloneParsing());
+                }
+                matcher = null;
+                stream = null;
+                father = null;
+                disposed = true;
+                finished = false;
+                isFirstMoveNext = false;
+            }
+            else
+            {
+                throw new ObjectDisposedException("embebed document");
+            }
+        }
+
+        public bool MoveNext()
+        {
+            if(!disposed)
+            {
+                if(isFirstMoveNext)
+                {
+                    stream = father.GetStreamReaderAtInitPos();
+                    isFirstMoveNext = false;
+                    finished = false;
+                }
+                int item = stream.ReadByte();
+                if(item == -1)
+                {
+                    stream.Dispose();
+                    isFirstMoveNext = true;
+                    finished = true;
+                    stream = null;
+                    father.SetThisAsFinal();
+                    return false;
+                }
+                matcher.MatchStep((char)item);
+                if(matcher.AtFinalState)
+                {
+                    father.RecieveFinishedReader(stream);
+                    isFirstMoveNext = true;
+                    finished = true;
+                    stream = null;
+                    return false;
+                }
+                Current = (char)item;
+                return true;
+            }
+            else
+            {
+                throw new ObjectDisposedException("embebed document");
+            }
+        }
+
+        public void Reset()
+        {
+            if(!disposed)
+            {
+                if(!finished)
+                {
+                    father.RecieveNOTFinishedReader(stream,matcher.CloneParsing());
+                }
+                stream = null;
+                isFirstMoveNext = true;
+                finished = false;
+            }
+            else
+            {
+                throw new ObjectDisposedException("embebed document");
+            }
+        }
+
+    }
+
+    public override string Id 
+    {
+        get
+        {
+            return id;
+        }
+    }
+
+    string id;
+
+
+    public override IEnumerable<char> Name
+    {
+        get
+        {
+            if (info is null)
+            {
+                var text = Utils.StreamToEnumerable(GetStreamReaderAtInitPos());
+                info = parser(text);
+            }
+            Stream reader = GetStreamReaderAtInitPos();
+            foreach (var item in Utils.StreamToEnumerable(reader).Skip(info.TitleInit).Take(info.TitleLen))
+                yield return item;
+            reader.Close();
+        }
+    }
+
+    Queue<(Stream,ILazyMatcher)> NotFinishedReader = new Queue<(Stream, ILazyMatcher)>();
+
+    Queue<Stream> FinishedReader = new Queue<Stream>();
+
+    readonly ICreator<ILazyMatcher> matcherCreator;
+
+    readonly Func<IEnumerable<char>,ParsedInfo> parser;
+    
+    ParsedInfo info;
+
+    public bool IsFinal
+    {
+        get;
+        private set;
+    }
+
+    public long InitPos
+    {
+        get;
+        private set;
+    }
+
+    public long LastPos
+    {
+        get;
+        private set;
+    }
+
+    public EmbebedDoc Server
+    {
+        get;
+        set;
+    }
+
+    public EmbebedDoc(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser, int initPos = -1, int lastPos = -1) :base(collectionPath,parser)
+    {
+        
+        this.id = collectionPath;
+        this.matcherCreator = matcherCreator;
+        this.InitPos = initPos;
+        this.LastPos = lastPos;
+        this.parser = parser;
+    }
+
+    void SetThisAsFinal()
+    {
+        IsFinal = true;
+    }
+
+    public Stream GetStreamForNextDoc()
+    {
+
+        if(IsFinal)
+        {
+            return null;
+        }
+        if(FinishedReader.Count > 0)
+        {
+            return FinishedReader.Dequeue();
+        }
+        else
+        {
+            if(NotFinishedReader.Count > 0)
+            {
+                var tuple = NotFinishedReader.Dequeue();
+                var sr = tuple.Item1;
+                var matcher = tuple.Item2;
+                PrivateMoveToEnd(sr,matcher);
+                return sr;
+            }
+            else
+            {
+                if(Server != null)
+                {
+                    var sr = Server.GetStreamForNextDoc();
+                    if(sr == null)
+                        throw new Exception("this document is beyond the final of the collection");
+                    PrivateMoveToEnd(sr,matcherCreator.Create());
+                    return sr;
+                }
+                else
+                {
+                    var fr = File.Open(id,FileMode.Open);
+                    var sr = new BufferedStream(fr);
+                    PrivateMoveToEnd(sr,matcherCreator.Create());
+                    return sr;
+                }
+            }
+        }
+    }
+
+
+    private void PrivateMoveToEnd(Stream sr, ILazyMatcher matcher)
+    {
+        if(LastPos != -1)
+        {
+            sr.Seek(LastPos,SeekOrigin.Begin);
+        }
+        else
+        {
+            MoveToEnd(sr,matcher);
+            if(!IsFinal)
+            {
+                LastPos =  sr.Position;
+            }
+            
+        }
+    }
+
+    private void RecieveFinishedReader(Stream reader)
+    {
+        FinishedReader.Enqueue(reader);
+        LastPos = reader.Position;
+    }
+
+    private void RecieveNOTFinishedReader(Stream reader, ILazyMatcher matcherClon)
+    {
+        NotFinishedReader.Enqueue((reader,matcherClon));
+    }
+
+    public static void MoveToEnd(Stream reader, ILazyMatcher matcherClon)
+    {
+        foreach(char item in Utils.StreamToEnumerable(reader))
+        {
+            matcherClon.MatchStep(item);
+            if(matcherClon.AtFinalState)
+                break;
+        }
+    }
+
+    public override IEnumerator<char> GetEnumerator()
+    {   
+        return new EmbebedDocEnumerator(this, matcherCreator.Create());
+    }
+
+    Stream GetStreamReaderAtInitPos()
+    {
+        if(Server == null)
+        {
+            var fr = File.Open(id,FileMode.Open);
+            return new BufferedStream(fr);
+        }
+        else
+        {
+            var stream = Server.GetStreamForNextDoc();
+            InitPos = stream.Position;
+            return stream;
+        }
+    }
+
+    public override IEnumerable<char> GetSnippet(int snippetLen)
+    {
+        if (info is null)
+        {
+            var text = Utils.StreamToEnumerable(GetStreamReaderAtInitPos());
+            info = parser(text);
+        }
+        Stream reader = GetStreamReaderAtInitPos();
+        int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
+        foreach (var item in Utils.StreamToEnumerable(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
+            yield return item;
+        reader.Close();
+    }
 }
 
 

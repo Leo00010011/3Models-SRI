@@ -16,6 +16,16 @@
             "console": "integratedTerminal"
         },
         {
+            "name": ".NET Core Launch (console) No Build",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/tester/bin/Debug/net6.0/tester.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
+        },
+        {
             "name": ".NET Core Launch (web)",
             "type": "coreclr",
             "request": "launch",

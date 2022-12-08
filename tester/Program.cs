@@ -9,203 +9,11 @@ using Utils;
 using System.Text.RegularExpressions;
 using System.Collections;
 
+
 namespace Test;
 
 #nullable disable
-
-
-public class DocSpliter : IEnumerable<IDocument>
-{
-    readonly string collection_path;
-
-    readonly ICreator<ILazyMatcher> matcherCreator;
-
-    public DocSpliter(string collectionPath, ICreator<ILazyMatcher> matcherCreator)
-    {
-        this.collection_path = collectionPath;
-        this.matcherCreator = matcherCreator;
-    }
-
-    public IEnumerator<IDocument> GetEnumerator()
-    {
-        throw new NotImplementedException();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return this.GetEnumerator();
-    }
-}
-
-
-public class EmbebedDoc : Document
-{
-    class EmbebedDocEnumerator : IEnumerator<char>
-    {
-        bool finished;
-        public char Current 
-        {
-            get;
-            private set;
-        }
-
-        object IEnumerator.Current => this.Current;
-
-        EmbebedDoc father;
-
-        public EmbebedDocEnumerator(EmbebedDoc father)
-        {
-            this.father = father;
-        }
-
-        public void Dispose()
-        {
-            
-        }
-
-        public bool MoveNext()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Reset()
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public override string Id 
-    {
-        get
-        {
-            return id;
-        }
-    }
-
-    string id;
-
-
-    public override IEnumerable<char> Name
-    {
-        get
-        {
-            if (info is null)
-            {
-                var text = GetChars(GetStreamReaderAtInitPos());
-                info = parser(text);
-            }
-            StreamReader reader = GetStreamReaderAtInitPos();
-            foreach (var item in GetChars(reader).Skip(info.TitleInit).Take(info.TitleLen))
-                yield return item;
-            reader.Close();
-        }
-    }
-
-    LinkedList<(StreamReader,ILazyMatcher)> NotFinishedReader;
-    LinkedList<StreamReader> FinishedReader;
-
-    readonly ICreator<ILazyMatcher> matcherCreator;
-
-    readonly Func<IEnumerable<char>,ParsedInfo> parser;
     
-    ParsedInfo info;
-
-
-    public long InitPos
-    {
-        get;
-        private set;
-    }
-
-    public long LastPos
-    {
-        get;
-        private set;
-    }
-
-    public EmbebedDoc(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser) :base(collectionPath,parser)
-    {
-        
-        this.id = collectionPath;
-        this.matcherCreator = matcherCreator;
-        this.InitPos = -1;
-        this.LastPos = 0;
-        this.parser = parser;
-        
-    }
-
-    public EmbebedDoc(string collectionPath, ICreator<ILazyMatcher> matcherCreator, int initPos, Func<IEnumerable<char>,ParsedInfo> parser) : base(collectionPath,parser)
-    {
-        this.id = collectionPath;
-        this.matcherCreator = matcherCreator;
-        this.InitPos = initPos;
-        this.LastPos = 0;
-        this.parser = parser;
-    }
-
-    public void OfferNextDocStreamReader()
-    {
-        
-    }
-
-    public void RecieveFinishedReader(StreamReader reader)
-    {
-        FinishedReader.Append(reader);
-    }
-
-    public static void MoveToEndOfDoc(StreamReader reader, ILazyMatcher matcherClon)
-    {
-        foreach(char item in GetChars(reader))
-        {
-            matcherClon.MatchStep(item);
-            if(matcherClon.AtFinalState)
-                break;
-        }
-    }
-
-
-    public void RecieveNOTFinishedReader(StreamReader reader, ILazyMatcher matcherClon)
-    {
-        if(InitPos == -1)
-        {
-            MoveToEndOfDoc(reader,matcherClon);
-            InitPos = reader.BaseStream.Position;
-        }
-        else
-        {
-            reader.BaseStream.Seek(InitPos - reader.BaseStream.Position,SeekOrigin.Begin);
-        }
-        FinishedReader.Append(reader);
-    }
-
-    public override IEnumerator<char> GetEnumerator()
-    {   
-        return new EmbebedDocEnumerator(this);
-    }
-
-    StreamReader GetStreamReaderAtInitPos()
-    {
-        return new StreamReader("String.Concat(Document.GetChars(reader).Take(15))");
-    }
-
-    public override IEnumerable<char> GetSnippet(int snippetLen)
-    {
-        if (info is null)
-        {
-            var text = GetChars(GetStreamReaderAtInitPos());
-            info = parser(text);
-        }
-        StreamReader reader = GetStreamReaderAtInitPos();
-        int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
-        foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
-            yield return item;
-        reader.Close();
-    }
-}
-
-
-    
-
 public class Program
 {
     public static void Print(IEnumerable<char> text)
@@ -345,13 +153,41 @@ public class Program
         Console.WriteLine("Something");
     }
 
-    public static bool ProbeOfPattern(IEnumerable<char> cran)
+    public static bool ProbeOfPattern(string path)
     {
+        var cran = new Document(path,DummyParser);  
         int skip = 1042;
         int take = 1048;
         string text = String.Concat(cran.Take(take).Skip(skip));
         bool result = new EndCranMatcher().Match(text);
         return result;
+    }
+
+    public static IEnumerable<char> GetChars(Stream reader)
+    {
+        while (!(reader.Length == reader.Position))
+            yield return (char)reader.ReadByte();
+    }
+
+    public static void CollectionSplitterTest(string path)
+    {
+        var cran = new CollectionSplitter(path,new EndCranMatcherCreator(),DummyParser);
+        int count = 1;
+        foreach(var doc in  cran)
+        {
+            string temp = String.Concat(doc);
+            Console.WriteLine(temp);
+            count--;
+            if(count == 0)
+            {
+                count = int.Parse(Console.ReadLine());
+                if(count == 0)
+                {
+                    break;
+                }
+            }
+
+        }
     }
 
     public static void Main(string[] args)
@@ -360,15 +196,11 @@ public class Program
         // {
         //     Console.WriteLine(doc_reader.BaseStream);
         // }
-        var doc = new Document("C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400",DummyParser);        
-        var reader = new StreamReader("C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400");
-        Console.WriteLine("Recien creado: " + reader.BaseStream.Position.ToString());
-        char item = (char)reader.Read();
-        System.Console.WriteLine("Después de leer una posición " + reader.BaseStream.Position.ToString());
-        reader.BaseStream.Seek(1042, SeekOrigin.Begin);
-        var temp = String.Concat(Document.GetChars(reader).Take(15)).ToArray();
-        Console.WriteLine("Después de hacer el seek " + reader.BaseStream.Position);
+        string path = "C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400";
+              
+        CollectionSplitterTest(path);
         Console.ReadLine();
+
         
     }
 

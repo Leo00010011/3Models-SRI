@@ -58,5 +58,7 @@ public interface ILazyMatcher
 
     bool Match(string text);
 
+    void ResetState();
+
     ILazyMatcher CloneParsing();
 }

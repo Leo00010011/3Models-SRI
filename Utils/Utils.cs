@@ -2,6 +2,13 @@
 
 public static class Utils
 {
+    public static IEnumerable<char> StreamToEnumerable(Stream sr)
+    {
+        while (!(sr.Position == sr.Length))
+            yield return (char)sr.ReadByte();
+        sr.Dispose();
+    }
+
     public static IEnumerable<string> ReadAllFiles(string path)
     {
         foreach (var item in Directory.EnumerateFiles(path))
@@ -75,7 +82,7 @@ public static class Utils
     }
 }
 
-public interface ICreator<T>
+public interface ICreator<out T>
 {
     T Create();
 }
