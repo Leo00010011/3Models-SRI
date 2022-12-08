@@ -1,5 +1,4 @@
 namespace SRI;
-
 using System.Collections;
 using DP;
 using DP.Interface;
@@ -240,6 +239,8 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 }
                 case TokenLexem.word:
                 {
+                    if(current != null) current.add_child(new WordNode());
+                    else current = new WordNode();   
                     tokenized.MoveNext();
                     break;
                 }
@@ -299,7 +300,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
     }
     private static bool evaluate(bool[] values,ref int index, BooleanNode node)
     {
-        bool evaluation;
+        bool evaluation = false;
         if(values.Length <=0) return false;
         if(node == null) return values[0];
         if(node is BinaryNode)
@@ -308,13 +309,9 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
             switch (n2.childs.Count)
             {
                 case 0:
-                {
-                    evaluation = n2.evaluate(values[index++], values[index++]);
-                    break;
-                }
                 case 1:
                 {
-                    evaluation = n2.evaluate(values[index++],evaluate(values,ref index,(BooleanNode)n2.childs[0]));
+                    //! exception bad format
                     break;
                 }
                 default: 
@@ -346,6 +343,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
 
     public static ISRIVector<string, int> CreateQuery(IEnumerable<char> docs)
     {
+        Utils.Porter2 porter_stem = new Utils.Porter2();
         SRIVectorLinked<string, int> query = new SRIVectorLinked<string, int>();
         List<TokenLexem> tokenized = new List<TokenLexem>();
 
@@ -356,7 +354,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 {   
                     if(!string.IsNullOrEmpty(token))
                     {
-                        query.Add(token,1); 
+                        query.Add(porter_stem.stem(token),1); 
                         tokenized.Add(TokenLexem.word);
                     } 
                     token = "<";
@@ -365,7 +363,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 {   
                     if(token == "<") token= "<="; 
                     else if(!string.IsNullOrEmpty(token))
-                    {   query.Add(token,1); 
+                    {   query.Add(porter_stem.stem(token),1); 
                         tokenized.Add(TokenLexem.word);
                         token = "=";
                     } 
@@ -379,7 +377,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                         else if(token == "<=")  tokenized.Add(TokenLexem.double_implies);
                         token ="";
                     }
-                    if(!string.IsNullOrEmpty(token)){query.Add(token,1); tokenized.Add(TokenLexem.word); token="";}
+                    if(!string.IsNullOrEmpty(token)){query.Add(porter_stem.stem(token),1); tokenized.Add(TokenLexem.word); token="";}
                     if (c== '&') tokenized.Add(TokenLexem.and);
                     if(c == '|') tokenized.Add(TokenLexem.or);
                     if(c == '^') tokenized.Add(TokenLexem.xor);
@@ -389,7 +387,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 }
                 
         }
-        if(!string.IsNullOrEmpty(token)){query.Add(token,1); tokenized.Add(TokenLexem.word);}
+        if(!string.IsNullOrEmpty(token)){query.Add(porter_stem.stem(token),1); tokenized.Add(TokenLexem.word);}
         tokenized.Add(TokenLexem.EOF);
         foreach (var item in tokenized)
         {
@@ -406,6 +404,15 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
         int index = 0;
         foreach (var item in query)
         {
+            if(Utils.Utils.GetStopWords().Contains(item.Item1))
+            {
+                for (int i = 0; i < score.Length; i++)
+                {
+                    if(score[i] == null) score[i] = new bool[query.Count];
+                    score[i][index] = true;
+                }
+            }
+            else
             foreach (var item1 in ((VSMStorageTD)Storage!)[item.Item1])
             {
                 var value = (Storage as VSMStorageTD)!.DocsFrecModal[item1.Item1].Item1;
