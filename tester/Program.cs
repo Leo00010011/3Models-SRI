@@ -172,18 +172,16 @@ cloc.Stop();
 Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
 cloc.Reset();
 
-// cloc.Start();
-// SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
-// cloc.Stop();
+cloc.Start();
+SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
+cloc.Stop();
 
-// Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
 // foreach (var item in results.Select(x => x.Title))
 // {
 //     System.Console.WriteLine(SearchItem.Convert(item));
 // }
-
-
 
 char ReadTest(IEnumerable<IDocument> docs)
 {

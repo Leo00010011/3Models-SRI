@@ -1,6 +1,7 @@
 namespace SRI;
 
 using System.Collections;
+using System.Diagnostics;
 using DP;
 using DP.Interface;
 using SRI.Interface;
@@ -147,11 +148,11 @@ public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, ID
     public SearchItem[] GetSearchItems(double[] query, int snippetLen)
     {
         ((GVSMStorageDT)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0;
-        SearchItem[] result = new SearchItem[Storage.Count];
+        var result = new SearchItem[Storage.Count];
 
         foreach (var item in ((GVSMStorageDT)Storage))
         {
-            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, (Storage as GVSMStorageDT)![item]));
+            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, ((GVSMStorageDT)Storage)![item]));
         }
         return result;
     }
@@ -181,7 +182,7 @@ public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, ID
         double[] temp = new double[(Storage as GVSMStorageDT)!.DocsLength];
         foreach ((string, int) item1 in results)
         {
-            foreach (var item2 in (Storage as GVSMStorageDT)!.GetKey1Vector(item1.Item1).Select((Value, Key) => (Key, Value)))
+            foreach (var item2 in (Storage as GVSMStorageDT)!.GetKey1Vector(item1.Item1))
             {
                 temp[item2.Key] += item2.Value;
             }
