@@ -42,3 +42,23 @@ public interface IResult<TValue, KKey, MPiece> : IEnumerable<(KKey, MPiece)>
     }
 }
 
+public interface ILazyMatcher
+{
+
+    bool AtFinalState
+    {
+        get;
+    }
+    
+    bool MatchStep(char step);
+
+    bool PeekStep(char step);
+
+    bool Match(IEnumerable<char> text);
+
+    bool Match(string text);
+
+    void ResetState();
+
+    ILazyMatcher CloneParsing();
+}

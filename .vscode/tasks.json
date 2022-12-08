@@ -38,6 +38,19 @@
             "problemMatcher": "$msCompile"
         },
         {
+            "label": "release_tester",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "build",
+                "-c",
+                "Release",
+                "--project",
+                "${workspaceFolder}/tester/tester.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "build_UI",
             "command": "dotnet",
             "type": "shell",

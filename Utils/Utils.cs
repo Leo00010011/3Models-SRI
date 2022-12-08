@@ -2,6 +2,13 @@
 
 public static class Utils
 {
+    public static IEnumerable<char> StreamToEnumerable(Stream sr)
+    {
+        while (!(sr.Position == sr.Length))
+            yield return (char)sr.ReadByte();
+        sr.Dispose();
+    }
+
     public static IEnumerable<string> ReadAllFiles(string path)
     {
         foreach (var item in Directory.EnumerateFiles(path))
@@ -127,6 +134,35 @@ public static class Utils
         if (currentTerm != null)
             yield return String.Concat(currentTerm);
     }
+
+    public static IEnumerable<string> GetTermsToLower(IEnumerable<char> text)
+    {
+        LinkedList<char>? currentTerm = null;
+        foreach (char item in text)
+        {
+            if (Char.IsLetterOrDigit(item))
+            {
+                if (currentTerm == null)
+                    currentTerm = new LinkedList<char>();
+                currentTerm.AddLast(Char.ToLower(item));
+            }
+            else
+            {
+                if (currentTerm != null)
+                {
+                    yield return String.Concat(currentTerm);
+                    currentTerm = null;
+                }
+            }
+        }
+        if (currentTerm != null)
+            yield return String.Concat(currentTerm);
+    }
+}
+
+public interface ICreator<out T>
+{
+    T Create();
 }
 
 public class ParsedInfo
