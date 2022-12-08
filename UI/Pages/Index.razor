@@ -43,7 +43,7 @@
     }
 
 <ul class="results">
-@foreach (var item in result.Take(15)) {
+@foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(15)) {
     <li>
      
         <div class="item">
@@ -155,8 +155,19 @@
                 {
                    docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
                 }
-                VSM vectorial = new VSM(docs);
-                result = new SearchResult(vectorial.Ranking(vectorial.GetSearchItems(VSM.CreateQuery(query),300)),""); 
+                VSMTermDoc vectorial = new VSMTermDoc(docs);
+                result = new SearchResult(vectorial.Ranking(vectorial.GetSearchItems(VSMTermDoc.CreateQuery(query),300)),""); 
+            }
+            else if(boolean)
+            {
+                LinkedList<IDocument> docs = new LinkedList<IDocument>();
+                foreach (var item in directories)
+                {
+                   docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
+                }
+                BSMTermDoc booleanModel = new BSMTermDoc(docs); 
+                result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(BSMTermDoc.CreateQuery(query),300)),""); 
+           
             }
             else result= null;
 

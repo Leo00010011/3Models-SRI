@@ -1,5 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-using System;
+﻿using System;
 using System.Diagnostics;
 using DP;
 using DP.Interface;
@@ -10,209 +9,145 @@ using System.Text.RegularExpressions;
 using System.Collections;
 
 
-namespace Test;
 
-#nullable disable
-    
-public class Program
-{
-    public static void Print(IEnumerable<char> text)
-    {
-        foreach (char c in text)
-        {
-            if (c == '\n')
-            {
-                Console.WriteLine();
-            }
-            else
-            {
-                Console.Write(c);
-            }
-        }
-    }
+// namespace Test;
+// public static class TestingMethods
+// {
 
-    public static IEnumerable<string> ReadAllFiles(string path)
-    {
-        foreach (var item in Directory.EnumerateFiles(path))
-        {
-            yield return item;
-        }
-        foreach (var docs in Directory.EnumerateDirectories(path))
-        {
-            foreach (var item in ReadAllFiles(docs))
-            {
-                yield return item;
-            }
-        }
-    }
+// }
 
-    private static char ReadTest(IEnumerable<IDocument> docs)
-    {
-        char a = '0';
-        foreach (var doc in docs)
-        {
-            foreach (var item in doc)
-            {
-                a = item;
-            }
-        }
-        return a;
-    }
+// public class Program
+// {
+//     public static void Print(IEnumerable<char> text)
+//     {
+//         foreach (char c in text)
+//         {
+//             if (c == '\n')
+//             {
+//                 Console.WriteLine();
+//             }
+//             else
+//             {
+//                 Console.Write(c);
+//             }
+//         }
+//     }
 
+//     public static IEnumerable<string> ReadAllFiles(string path)
+//     {
+//         foreach (var item in Directory.EnumerateFiles(path))
+//         {
+//             yield return item;
+//         }
+//         foreach (var docs in Directory.EnumerateDirectories(path))
+//         {
+//             foreach (var item in ReadAllFiles(docs))
+//             {
+//                 yield return item;
+//             }
+//         }
+//     }
 
+//     public static void Main(string[] args)
+//     {
+//         Stopwatch cloc = new Stopwatch();
+//         IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
 
-    private static void SpeedTest()
-    {
-        Stopwatch cloc = new Stopwatch();
-        IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
+//         LinkedList<IDocument> docs = new LinkedList<IDocument>();
+//         foreach (var item in docsID)
+//         {
+//            docs.AddLast(new Document(item, Parser.NewsgroupParser));
+//         }
 
-        LinkedList<IDocument> docs = new LinkedList<IDocument>();
-        foreach (var item in docsID)
-        {
-           docs.AddLast(new Document(item, Parser.NewsgroupParser));
-        }
+//         cloc.Start();
+//         ReadTest(docs);
+//         cloc.Stop();
 
-        cloc.Start();
-        ReadTest(docs);
-        cloc.Stop();
+//         Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
+//         cloc.Reset();
 
-        Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
-        cloc.Reset();
+//         cloc.Start();
+//         WMTermDoc vectorial = new WMTermDoc(docs);
+//         cloc.Stop();
 
-        cloc.Start();
-        VSM vectorial = new VSM(docs);
-        cloc.Stop();
+//         Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
+//         cloc.Reset();
 
-        Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
-        cloc.Reset();
+//         SRIVectorDic<string, IWeight> query = new SRIVectorDic<string, IWeight>();
 
-        SRIVectorDic<string, IWeight> query = new SRIVectorDic<string, IWeight>();
+//         QueryVSMWeight hoW = new QueryVSMWeight(2, 2);
+//         query.Add("house", hoW);
 
-        QueryVSMWeight hoW = new QueryVSMWeight(2, 2);
-        query.Add("house", hoW);
+//         cloc.Start();
+//         SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(query, 30));
+//         cloc.Stop();
 
-        cloc.Start();
-        SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(query, 30));
-        cloc.Stop();
+//         Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
-        Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+//         foreach (var item in results.Select(x => x.Title))
+//         {
+//             System.Console.WriteLine(SearchItem.Convert(item));
+//         }
+//     }
 
-        foreach (var item in results.Select(x => x.Title))
-        {
-            System.Console.WriteLine(SearchItem.Convert(item));
-        }
-    }
-
-    public static ParsedInfo DummyParser(IEnumerable<char> text)
-    {
-        return new ParsedInfo(0,0,0,0,0);
-    }
-
-    public static void shiftLeft(char[] arr)
-    {
-        for (int i = 0; i < arr.Length - 1; i++)
-        {
-            arr[i] = arr[i+1];
-        }
-    }
-
-    public static void PrintTill(IEnumerable<char> text,int large)
-    {
-        Console.WriteLine(String.Concat(text.Take(large)));
-    }
-
-    public static IEnumerable<string> TestMatchStep(ILazyMatcher matcher,IEnumerable<char> text, int length)
-    {
-        Console.WriteLine("Dentro de test");
-        char[] arr = new char[length];
-        int index = 0;
-        int iter = 0;
-        foreach(char step in text)
-        {
-            iter++;
-            Console.WriteLine(iter);
-            if(matcher.MatchStep(step))
-            {
-                arr[index] = step;
-                index++;
-                if(matcher.AtFinalState)
-                {
-                    yield return new String(arr);
-                    Console.ReadLine();
-                }
-            }
-            else
-            {
-                index = 0;
-            }
-        }
-    }
-
-    public static void PrintSomeThing()
-    {
-        Console.WriteLine("Something");
-    }
-
-    public static bool ProbeOfPattern(string path)
-    {
-        var cran = new Document(path,DummyParser);  
-        int skip = 1042;
-        int take = 1048;
-        string text = String.Concat(cran.Take(take).Skip(skip));
-        bool result = new EndCranMatcher().Match(text);
-        return result;
-    }
-
-    public static IEnumerable<char> GetChars(Stream reader)
-    {
-        while (!(reader.Length == reader.Position))
-            yield return (char)reader.ReadByte();
-    }
-
-    public static void CollectionSplitterTest(string path)
-    {
-        var cran = new CollectionSplitter(path,new EndCranMatcherCreator(),DummyParser);
-        int count = 1;
-        foreach(var doc in  cran)
-        {
-            string temp = String.Concat(doc);
-            Console.WriteLine(temp);
-            count--;
-            if(count == 0)
-            {
-                count = int.Parse(Console.ReadLine());
-                if(count == 0)
-                {
-                    break;
-                }
-            }
-
-        }
-    }
-
-    public static void Main(string[] args)
-    {
-        // using(var doc_reader = new StreamReader(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\cran\cran.all.1400"))
-        // {
-        //     Console.WriteLine(doc_reader.BaseStream);
-        // }
-        string path = "C:\\Users\\Leo pc\\Desktop\\SRI\\Test Collections\\cran\\cran.all.1400";
-              
-        CollectionSplitterTest(path);
-        Console.ReadLine();
-
-        
-    }
+//     private static char ReadTest(IEnumerable<IDocument> docs)
+//     {
+//         char a = '0';
+//         foreach (var doc in docs)
+//         {
+//             foreach (var item in doc)
+//             {
+//                 a = item;
+//             }
+//         }
+//         return a;
+//     }
+// }
 
 
-}
+// string s ="From: hgomez@magnus.acs.ohio-state.edu (Humberto L Gomez)\nsubject: MULTISYNC 3D NEC MONITOR FOR SALE\n\n\nI have an NEC multisync 3d monitor for sale. great condition. looks new. it is\n.28 dot pitch\nSVGA monitor that syncs from 15-38khz\n\nit is compatible with all aga amiga graphics modes.\nleave message if interested. make an offer.\n-- ";
+// ParsedInfo a = Parser.NewsgroupParser(s);
 
+// System.Console.WriteLine("-----Newsgroup-----");
+// System.Console.WriteLine($"Title init: {a.TitleInit}");
+// System.Console.WriteLine($"Title Len: {a.TitleLen}");
+// System.Console.WriteLine($"Text Init: {a.TextInit}");
+// System.Console.WriteLine($"Snippet init: {a.SnippetInit}");
 
-// string s ="From: hgomez@magnus.acs.ohio-state.edu (Humberto L Gomez)\nSubject: MULTISYNC 3D NEC MONITOR FOR SALE\n\n\nI have an NEC multisync 3d monitor for sale. great condition. looks new. it is\n.28 dot pitch\nSVGA monitor that syncs from 15-38khz\n\nit is compatible with all aga amiga graphics modes.\nleave message if interested. make an offer.\n-- ";
-// ParsedInfo a = Parser.NewsgroupParser(doc);
+// s= "<title>BAHIA COCOA REVIEW</title><DATELINE>    SALVADOR, Feb 26 - </DATELINE><body>Showers continued throughout the week inthe Bahia cocoa zone, alleviating the drought since earlyJanuary and improving prospects for the coming temporao,although normal humidity levels have not been restored,Comissaria Smith said in its weekly review.";
+// a = Parser.ReutersParser(s);
 
+// System.Console.WriteLine("-----Routers-----");
+// System.Console.WriteLine($"Title init: {a.TitleInit}");
+// System.Console.WriteLine($"Title Len: {a.TitleLen}");
+// System.Console.WriteLine($"Text Init: {a.TextInit}");
+// System.Console.WriteLine($"Snippet init: {a.SnippetInit}");
 
-// System.Console.WriteLine(a.TitleInit);
-// System.Console.WriteLine(a.TitleLen);
-// System.Console.WriteLine(a.TextLen);
-// System.Console.WriteLine(a.SnippetLen);
+// s= ".I 1.t\nexperimental investigation of the aerodynamics of awing in a slipstream .\n.a\nbrenckman,m..Bj. ae. scs. 25, 1958, 324. .w\nexperimental investigation of the aerodynamics of a wing in a slipstream . an experimental study of a wing in a propeller slipstream was made in order to determine the spanwise distribution of the lift increase due to slipstream at different angles of attack of the wing.";
+// a = Parser.CranParser(s);
+
+// System.Console.WriteLine("-----Cran-----");
+// System.Console.WriteLine($"Title init: {a.TitleInit}");
+// System.Console.WriteLine($"Title Len: {a.TitleLen}");
+// System.Console.WriteLine($"Text Init: {a.TextInit}");
+// System.Console.WriteLine($"Snippet init: {a.SnippetInit}");
+
+// ISRIVector<string, int> query = BSMTermDoc.CreateQuery("tony & !homosexuality");
+// bool[] x = new bool[2];
+// x[0]= true;
+// x[1]= true;
+
+// string corpus_path = "C:\\Users\\User\\Desktop\\Test Collections\\Test Collections\\20 Newsgroups\\20news-18828\\talk.religion.misc";
+// IEnumerable<string> directories = Utils.Utils.ReadAllFiles(corpus_path);
+// LinkedList<IDocument> docs = new LinkedList<IDocument>();
+// foreach (var item in directories)
+// {
+//    docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
+// }
+// BSMTermDoc booleanModel = new BSMTermDoc(docs); 
+// ISearchResult result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(query,300)),""); 
+       
+// foreach (var item in result)
+// {
+//     System.Console.WriteLine($"{SearchItem.Convert(item.Title)} => {item.Score}");
+// }
