@@ -1,7 +1,8 @@
-namespace DP;
 using DP.Interface;
 using Utils;
 using System.Collections;
+namespace DP;
+
 
 public enum stateDoc
 {
@@ -110,20 +111,24 @@ public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
 
     void CompFrecs()
     {
+        Utils.Porter2 porter_stem =  new Utils.Porter2();   
         frecs = new Dictionary<string, int>();
 
-        foreach (string item in Utils.GetTerms(Result))
-        {
-            if (!Utils.GetStopWords().Contains(item))
+        foreach (string item in Utils.Utils.GetTerms(Result))
+        {   
+            string item1 = item.ToLower();
+            if (!Utils.Utils.GetStopWords().Contains(item1))
             {
+                item1 = porter_stem.stem(item1);
                 int val;
-                if (frecs.TryGetValue(item, out val))
+                
+                if (frecs.TryGetValue(item1, out val))
                 {
-                    frecs[item] = val + 1;
+                    frecs[item1] = val + 1;
                 }
                 else
                 {
-                    frecs.Add(item, 1);
+                    frecs.Add(item1, 1);
                 }
             }
 

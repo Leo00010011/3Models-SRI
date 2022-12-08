@@ -153,7 +153,7 @@ public static class Parser
     public static ParsedInfo NewsgroupParser(IEnumerable<char> file)
     {
         int count = 0;
-        char[] matching_machine = new char[]{'s', 'u','b','j','e','c','t',':',' '};
+        char[] matching_machine = new char[]{'S', 'u','b','j','e','c','t',':',' '};
         IEnumerator<char> file_enumerator = file.GetEnumerator();
         int ti = Parser.MatchIndex(file_enumerator, matching_machine,out count,count);
         while(file_enumerator.MoveNext() && file_enumerator.Current != '\n') count++;
@@ -165,9 +165,9 @@ public static class Parser
     public static ParsedInfo CranParser(IEnumerable<char> file)
     {
         int count = 0;
-        char[] matching_title = new char[]{'.', 't','\n'};
-        char[] matching_end_title = new char[]{'.', 'a','\n'};
-        char[] matching_text = new char[]{'.', 'w','\n'};
+        char[] matching_title = new char[]{'.', 'T','\n'};
+        char[] matching_end_title = new char[]{'.', 'A','\n'};
+        char[] matching_text = new char[]{'.', 'W','\n'};
         IEnumerator<char> file_enumerator = file.GetEnumerator();
         int ti= Parser.MatchIndex(file_enumerator,matching_title,out count,count);
         int tl= Parser.MatchIndex(file_enumerator,matching_end_title,out count,count) - ti -3;
@@ -179,9 +179,9 @@ public static class Parser
     public static ParsedInfo ReutersParser(IEnumerable<char> file)
     {
         int count = 0;
-        char[] matching_title = new char[]{'<', 't','i','t','l','e','>'};
-        char[] matching_end_title = new char[]{'<','/', 't','i','t','l','e','>'};
-        char[] matching_text = new char[]{'<', 'b','o','d','y','>'};
+        char[] matching_title = new char[]{'<', 'T','I','T','L','E','>'};
+        char[] matching_end_title = new char[]{'<','/', 'T','I','T','L','E','>'};
+        char[] matching_text = new char[]{'<', 'B','O','D','Y','>'};
         IEnumerator<char> file_enumerator = file.GetEnumerator();
         int ti= Parser.MatchIndex(file_enumerator,matching_title,out count,count);
         int tl= Parser.MatchIndex(file_enumerator,matching_end_title,out count,count) - ti -8;

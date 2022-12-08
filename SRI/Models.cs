@@ -354,7 +354,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 {   
                     if(!string.IsNullOrEmpty(token))
                     {
-                        query.Add(porter_stem.stem(token),1); 
+                        query.Add(porter_stem.stem(token.ToLower()),1); 
                         tokenized.Add(TokenLexem.word);
                     } 
                     token = "<";
@@ -363,7 +363,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 {   
                     if(token == "<") token= "<="; 
                     else if(!string.IsNullOrEmpty(token))
-                    {   query.Add(porter_stem.stem(token),1); 
+                    {   query.Add(porter_stem.stem(token.ToLower()),1); 
                         tokenized.Add(TokenLexem.word);
                         token = "=";
                     } 
@@ -377,7 +377,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                         else if(token == "<=")  tokenized.Add(TokenLexem.double_implies);
                         token ="";
                     }
-                    if(!string.IsNullOrEmpty(token)){query.Add(porter_stem.stem(token),1); tokenized.Add(TokenLexem.word); token="";}
+                    if(!string.IsNullOrEmpty(token)){query.Add(porter_stem.stem(token.ToLower()),1); tokenized.Add(TokenLexem.word); token="";}
                     if (c== '&') tokenized.Add(TokenLexem.and);
                     if(c == '|') tokenized.Add(TokenLexem.or);
                     if(c == '^') tokenized.Add(TokenLexem.xor);
@@ -387,7 +387,7 @@ public class BSMTermDoc: WMTermDoc, ISRIModel<string,string,int,string,IDocument
                 }
                 
         }
-        if(!string.IsNullOrEmpty(token)){query.Add(porter_stem.stem(token),1); tokenized.Add(TokenLexem.word);}
+        if(!string.IsNullOrEmpty(token)){query.Add(porter_stem.stem(token.ToLower()),1); tokenized.Add(TokenLexem.word);}
         tokenized.Add(TokenLexem.EOF);
         foreach (var item in tokenized)
         {
