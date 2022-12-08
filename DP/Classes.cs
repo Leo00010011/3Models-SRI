@@ -588,11 +588,11 @@ public class EmbebedDoc : Document
         {
             if (info is null)
             {
-                var text = Utils.StreamToEnumerable(GetStreamReaderAtInitPos());
+                var text = Utils.Utils.StreamToEnumerable(GetStreamReaderAtInitPos());
                 info = parser(text);
             }
             Stream reader = GetStreamReaderAtInitPos();
-            foreach (var item in Utils.StreamToEnumerable(reader).Skip(info.TitleInit).Take(info.TitleLen))
+            foreach (var item in Utils.Utils.StreamToEnumerable(reader).Skip(info.TitleInit).Take(info.TitleLen))
                 yield return item;
             reader.Close();
         }
@@ -720,7 +720,7 @@ public class EmbebedDoc : Document
 
     public static void MoveToEnd(Stream reader, ILazyMatcher matcherClon)
     {
-        foreach(char item in Utils.StreamToEnumerable(reader))
+        foreach(char item in Utils.Utils.StreamToEnumerable(reader))
         {
             matcherClon.MatchStep(item);
             if(matcherClon.AtFinalState)
@@ -752,12 +752,12 @@ public class EmbebedDoc : Document
     {
         if (info is null)
         {
-            var text = Utils.StreamToEnumerable(GetStreamReaderAtInitPos());
+            var text = Utils.Utils.StreamToEnumerable(GetStreamReaderAtInitPos());
             info = parser(text);
         }
         Stream reader = GetStreamReaderAtInitPos();
         int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
-        foreach (var item in Utils.StreamToEnumerable(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
+        foreach (var item in Utils.Utils.StreamToEnumerable(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
             yield return item;
         reader.Close();
     }
@@ -800,7 +800,7 @@ public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
         foreach (string item in Utils.Utils.GetTerms(Result))
         {   
             string item1 = item.ToLower();
-            if (!Utils.Utils.GetStopWords().Contains(item1)
+            if (!Utils.Utils.GetStopWords().Contains(item1))
             {
                 item1 = porter_stem.stem(item1);
                 int val;
