@@ -359,8 +359,7 @@ public class EndCranMatcher : ILazyMatcher
 }
 
 
-
-public class Document : IDocument
+public class Document : IDocument, IComparable
 {
     private ParsedInfo? info;
     private DateTime modifiedDateTime;
@@ -423,14 +422,14 @@ public class Document : IDocument
     
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-    public override bool Equals(object? obj)
-    {
-        return obj is Document document &&
-               modifiedDateTime == document.modifiedDateTime &&
-               Id == document.Id;
-    }
+    public override bool Equals(object? obj) => obj is Document document && modifiedDateTime == document.modifiedDateTime && Id == document.Id;
 
     public override int GetHashCode() => Id.GetHashCode();
+
+    public int CompareTo(object? obj)
+    {
+        return obj is Document document ? document.Id.CompareTo(Id) : throw new InvalidCastException();
+    }
 }
 
 
