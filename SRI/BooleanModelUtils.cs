@@ -81,3 +81,10 @@ public class NotNode : UnaryNode
     }
 }
 
+public class WordNode : UnaryNode
+{
+    public override bool evaluate(bool value)
+    {
+       return value;
+    }
+}

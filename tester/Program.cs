@@ -5,6 +5,9 @@ using DP.Interface;
 using SRI;
 using SRI.Interface;
 using Utils;
+using System.Text.RegularExpressions;
+using System.Collections;
+
 
 // namespace Test;
 // public static class TestingMethods
@@ -44,47 +47,47 @@ using Utils;
 //         }
 //     }
 
-//     public static void Main(string[] args)
-//     {
-//         Stopwatch cloc = new Stopwatch();
-//         IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
+    //public static void Main(string[] args)
+    //{
+        // Stopwatch cloc = new Stopwatch();
+        // IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
 
-//         LinkedList<IDocument> docs = new LinkedList<IDocument>();
-//         foreach (var item in docsID)
-//         {
-//            docs.AddLast(new Document(item, Parser.NewsgroupParser));
-//         }
+        // LinkedList<IDocument> docs = new LinkedList<IDocument>();
+        // foreach (var item in docsID)
+        // {
+        //    docs.AddLast(new Document(item, Parser.NewsgroupParser));
+        // }
 
-//         cloc.Start();
-//         ReadTest(docs);
-//         cloc.Stop();
+        // cloc.Start();
+        // ReadTest(docs);
+        // cloc.Stop();
 
-//         Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
-//         cloc.Reset();
+        // Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
+        // cloc.Reset();
 
-//         cloc.Start();
-//         WMTermDoc vectorial = new WMTermDoc(docs);
-//         cloc.Stop();
+        // cloc.Start();
+        // WMTermDoc vectorial = new WMTermDoc(docs);
+        // cloc.Stop();
 
-//         Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
-//         cloc.Reset();
+        // Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
+        // cloc.Reset();
 
-//         SRIVectorDic<string, IWeight> query = new SRIVectorDic<string, IWeight>();
+        // SRIVectorDic<string, IWeight> query = new SRIVectorDic<string, IWeight>();
 
-//         QueryVSMWeight hoW = new QueryVSMWeight(2, 2);
-//         query.Add("house", hoW);
+        // QueryVSMWeight hoW = new QueryVSMWeight(2, 2);
+        // query.Add("house", hoW);
 
-//         cloc.Start();
-//         SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(query, 30));
-//         cloc.Stop();
+        // cloc.Start();
+        // SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(query, 30));
+        // cloc.Stop();
 
-//         Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+        // Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
-//         foreach (var item in results.Select(x => x.Title))
-//         {
-//             System.Console.WriteLine(SearchItem.Convert(item));
-//         }
-//     }
+        // foreach (var item in results.Select(x => x.Title))
+        // {
+        //     System.Console.WriteLine(SearchItem.Convert(item));
+        // }
+    //}
 
 //     private static char ReadTest(IEnumerable<IDocument> docs)
 //     {
@@ -197,3 +200,20 @@ char ReadTest(IEnumerable<IDocument> docs)
 }
 
 System.Console.ReadKey();
+// x[0]= true;
+// x[1]= true;
+
+// string corpus_path = "C:\\Users\\User\\Desktop\\Test Collections\\Test Collections\\20 Newsgroups\\20news-18828\\talk.religion.misc";
+// IEnumerable<string> directories = Utils.Utils.ReadAllFiles(corpus_path);
+// LinkedList<IDocument> docs = new LinkedList<IDocument>();
+// foreach (var item in directories)
+// {
+//    docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
+// }
+// BSMTermDoc booleanModel = new BSMTermDoc(docs); 
+// ISearchResult result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(query,300)),""); 
+       
+// foreach (var item in result)
+// {
+//     System.Console.WriteLine($"{SearchItem.Convert(item.Title)} => {item.Score}");
+// }

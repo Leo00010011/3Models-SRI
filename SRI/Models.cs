@@ -1,5 +1,4 @@
 namespace SRI;
-
 using System.Collections;
 using System.Diagnostics;
 using DP;
@@ -267,10 +266,12 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, int, string, IDoc
                         break;
                     }
                 case TokenLexem.word:
-                    {
-                        tokenized.MoveNext();
-                        break;
-                    }
+                {
+                    if(current != null) current.add_child(new WordNode());
+                    else current = new WordNode();   
+                    tokenized.MoveNext();
+                    break;
+                }
                 default:
                     {
                         //! notificar error de query
@@ -327,30 +328,26 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, int, string, IDoc
     }
     private static bool evaluate(bool[] values, ref int index, BooleanNode node)
     {
-        bool evaluation;
-        if (values.Length <= 0) return false;
-        if (node == null) return values[0];
-        if (node is BinaryNode)
+        bool evaluation = false;
+        if(values.Length <=0) return false;
+        if(node == null) return values[0];
+        if(node is BinaryNode)
         {
             BinaryNode n2 = (BinaryNode)node;
             switch (n2.childs.Count)
             {
                 case 0:
-                    {
-                        evaluation = n2.evaluate(values[index++], values[index++]);
-                        break;
-                    }
                 case 1:
-                    {
-                        evaluation = n2.evaluate(values[index++], evaluate(values, ref index, (BooleanNode)n2.childs[0]));
-                        break;
-                    }
-                default:
-                    {
-                        evaluation = n2.evaluate(evaluate(values, ref index, (BooleanNode)n2.childs[0]), evaluate(values, ref index, (BooleanNode)n2.childs[1]));
-                        break;
-                    }
-            }
+                {
+                    //! exception bad format
+                    break;
+                }
+                default: 
+                {
+                    evaluation = n2.evaluate(evaluate(values,ref index,(BooleanNode)n2.childs[0]), evaluate(values,ref index,(BooleanNode)n2.childs[1]));
+                    break;
+                }
+            }  
         }
         else
         {
@@ -374,29 +371,30 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, int, string, IDoc
 
     public static IDictionary<string, int> CreateQuery(IEnumerable<char> docs)
     {
-        Dictionary<string, int> query = new Dictionary<string, int>();
+        Utils.Porter2 porter_stem = new Utils.Porter2();
+        SRIVectorLinked<string, int> query = new SRIVectorLinked<string, int>();
         List<TokenLexem> tokenized = new List<TokenLexem>();
 
         string token = "";
         foreach (char c in docs)
         {
-            if (c == '<')
-            {
-                if (!string.IsNullOrEmpty(token))
-                {
-                    query.Add(token, 1);
-                    tokenized.Add(TokenLexem.word);
+                if( c== '<')
+                {   
+                    if(!string.IsNullOrEmpty(token))
+                    {
+                        query.Add(porter_stem.stem(token.ToLower()),1); 
+                        tokenized.Add(TokenLexem.word);
+                    } 
+                    token = "<";
                 }
-                token = "<";
-            }
-            else if (c == '=')
-            {
-                if (token == "<") token = "<=";
-                else if (!string.IsNullOrEmpty(token))
-                {
-                    query.Add(token, 1);
-                    tokenized.Add(TokenLexem.word);
-                    token = "=";
+                else if(c== '=')
+                {   
+                    if(token == "<") token= "<="; 
+                    else if(!string.IsNullOrEmpty(token))
+                    {   query.Add(porter_stem.stem(token.ToLower()),1); 
+                        tokenized.Add(TokenLexem.word);
+                        token = "=";
+                    } 
                 }
             }
             else if (char.IsLetter(c) || char.IsNumber(c)) token += c.ToString();
@@ -404,9 +402,19 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, int, string, IDoc
             {
                 if (c == '>')
                 {
-                    if (token == "=") tokenized.Add(TokenLexem.implies);
-                    else if (token == "<=") tokenized.Add(TokenLexem.double_implies);
-                    token = "";
+                    if(c =='>')
+                    {
+                        if (token == "=") tokenized.Add(TokenLexem.implies);
+                        else if(token == "<=")  tokenized.Add(TokenLexem.double_implies);
+                        token ="";
+                    }
+                    if(!string.IsNullOrEmpty(token)){query.Add(porter_stem.stem(token.ToLower()),1); tokenized.Add(TokenLexem.word); token="";}
+                    if (c== '&') tokenized.Add(TokenLexem.and);
+                    if(c == '|') tokenized.Add(TokenLexem.or);
+                    if(c == '^') tokenized.Add(TokenLexem.xor);
+                    if(c == '!') tokenized.Add(TokenLexem.not);
+                    if(c == '(') tokenized.Add(TokenLexem.opar);
+                    if(c == ')') tokenized.Add(TokenLexem.cpar);
                 }
                 if (!string.IsNullOrEmpty(token)) { query.Add(token, 1); tokenized.Add(TokenLexem.word); token = ""; }
                 if (c == '&') tokenized.Add(TokenLexem.and);
@@ -418,7 +426,7 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, int, string, IDoc
             }
 
         }
-        if (!string.IsNullOrEmpty(token)) { query.Add(token, 1); tokenized.Add(TokenLexem.word); }
+        if(!string.IsNullOrEmpty(token)){query.Add(porter_stem.stem(token.ToLower()),1); tokenized.Add(TokenLexem.word);}
         tokenized.Add(TokenLexem.EOF);
         foreach (var item in tokenized)
         {
@@ -435,7 +443,16 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, int, string, IDoc
         int index = 0;
         foreach (var item in query)
         {
-            foreach (var item1 in ((VSMStorageTD)Storage!)[item.Key])
+            if(Utils.Utils.GetStopWords().Contains(item.Item1))
+            {
+                for (int i = 0; i < score.Length; i++)
+                {
+                    if(score[i] == null) score[i] = new bool[query.Count];
+                    score[i][index] = true;
+                }
+            }
+            else
+            foreach (var item1 in ((VSMStorageTD)Storage!)[item.Item1])
             {
                 var value = (Storage as VSMStorageTD)!.DocsFrecModal[item1.Key].Item1;
                 if (score[value] == null) score[value] = new bool[query.Count];
