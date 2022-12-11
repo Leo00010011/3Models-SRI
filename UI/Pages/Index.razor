@@ -29,8 +29,8 @@
     </div>
    
     <div class="form-check form-check-inline">
-      <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="3" @onchange="SRISelector" disabled>
-      <label class="form-check-label" for="inlineRadio3">Third Model</label>
+      <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="3" @onchange="SRISelector" >
+      <label class="form-check-label" for="inlineRadio3">Generalized Vectorial Model</label>
     </div>
 </div>
 
@@ -74,7 +74,7 @@
     private bool add_corpus_path=true;
     private bool vectorial = true;
     private bool boolean;
-    private bool other;
+    private bool generalized_vectorial;
 
 
     /// <summary>
@@ -90,19 +90,19 @@
                 case "1":
                     vectorial = true;
                     boolean= false;
-                    other =false;
+                    generalized_vectorial =false;
                     break;
                 
                 case "2":
                     vectorial = false;
                     boolean= true;
-                    other =false;
+                    generalized_vectorial =false;
                     break;
 
                 case "3":
                     vectorial = false;
                     boolean= false;
-                    other =true;
+                    generalized_vectorial =true;
                     break;
 
             }
@@ -168,6 +168,10 @@
                 BSMTermDoc booleanModel = new BSMTermDoc(docs); 
                 result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(BSMTermDoc.CreateQuery(query),300)),""); 
            
+            }
+            else if(generalized_vectorial)
+            {
+                
             }
             else result= null;
 
