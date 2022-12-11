@@ -456,12 +456,14 @@ public class CollectionSplitter : IEnumerable<IDocument>
     {
         EmbebedDoc previousDoc = null;
         EmbebedDoc current = null;
+        int index = 0;
         while(previousDoc == null || !previousDoc.IsFinal)
         {
-            current = new EmbebedDoc(Path,matcherCreator,parser);
+            current = new EmbebedDoc(Path,index,matcherCreator,parser);
             current.Server = previousDoc;
             yield return current;
             previousDoc = current;
+            index++;
         }
     }
 
@@ -533,6 +535,7 @@ public class EmbebedDoc : Document
                 int item = stream.ReadByte();
                 if(item == -1)
                 {
+                    father.LastPos = stream.Position;
                     stream.Dispose();
                     isFirstMoveNext = true;
                     finished = true;
@@ -586,7 +589,7 @@ public class EmbebedDoc : Document
         }
     }
 
-    string id;
+    string path;
 
 
     public override IEnumerable<char> Name
@@ -617,9 +620,23 @@ public class EmbebedDoc : Document
 
     public bool IsFinal
     {
-        get;
-        private set;
+        get
+        {
+            if(LastPos == -1)
+            {
+                var temp = GetStreamForNextDoc();//Intentar mover el stream al final
+                if(!isFinal)
+                    FinishedReader.Enqueue(temp);
+                return isFinal;
+            }
+            else
+            {
+                return isFinal;
+            }
+        }
     }
+
+    bool isFinal = false;
 
     public long InitPos
     {
@@ -639,10 +656,13 @@ public class EmbebedDoc : Document
         set;
     }
 
-    public EmbebedDoc(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser, int initPos = -1, int lastPos = -1) :base(collectionPath,parser)
+    string id;
+
+    public EmbebedDoc(string collectionPath,int index, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser, int initPos = -1, int lastPos = -1) :base(collectionPath,parser)
     {
         
-        this.id = collectionPath;
+        this.path = collectionPath;
+        this.id = path + "\\" + index;
         this.matcherCreator = matcherCreator;
         this.InitPos = initPos;
         this.LastPos = lastPos;
@@ -651,13 +671,13 @@ public class EmbebedDoc : Document
 
     void SetThisAsFinal()
     {
-        IsFinal = true;
+        isFinal = true;
     }
 
     public Stream GetStreamForNextDoc()
     {
 
-        if(IsFinal)
+        if(isFinal)
         {
             return null;
         }
@@ -687,7 +707,7 @@ public class EmbebedDoc : Document
                 }
                 else
                 {
-                    var fr = File.Open(id,FileMode.Open);
+                    var fr = File.Open(path,FileMode.Open);
                     var sr = new BufferedStream(fr);
                     PrivateMoveToEnd(sr,matcherCreator.Create());
                     return sr;
@@ -744,7 +764,7 @@ public class EmbebedDoc : Document
     {
         if(Server == null)
         {
-            var fr = File.Open(id,FileMode.Open);
+            var fr = File.Open(path,FileMode.Open);
             return new BufferedStream(fr);
         }
         else

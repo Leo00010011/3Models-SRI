@@ -9,14 +9,14 @@ using System.Text.RegularExpressions;
 using System.Collections;
 
 
-// namespace Test;
+namespace Test;
 // public static class TestingMethods
 // {
 
 // }
 
-// public class Program
-// {
+ public class Program
+ {
 //     public static void Print(IEnumerable<char> text)
 //     {
 //         foreach (char c in text)
@@ -47,8 +47,8 @@ using System.Collections;
 //         }
 //     }
 
-    //public static void Main(string[] args)
-    //{
+    public static void Main(string[] args)
+    {
         // Stopwatch cloc = new Stopwatch();
         // IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
 
@@ -87,7 +87,22 @@ using System.Collections;
         // {
         //     System.Console.WriteLine(SearchItem.Convert(item));
         // }
-    //}
+        //var temp = new CollectionSplitter(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\Reuters\reut2-000.sgm",new EndReutersMatcherCreator(),Utils.Parser.ReutersParser);
+        //foreach(var doc in temp)
+        //{
+        //    System.Console.WriteLine(doc.Id);
+        //}
+
+        var temp = File.Open(@"C:\Users\Leo pc\Desktop\SRI\Pf\3Models-SRI\tester\test.txt",FileMode.Open);
+        var reader1 = new BufferedStream(temp);
+        var reader2 = new BufferedStream(temp);
+        reader2.Seek(4,SeekOrigin.Begin);
+        reader1.UnderlyingStream.Position = 0;
+        char ch1 = (char)reader1.ReadByte();
+        reader1.UnderlyingStream.Position = 4;
+        char ch2 = (char)reader2.ReadByte();
+        Console.ReadLine();
+    }
 
 //     private static char ReadTest(IEnumerable<IDocument> docs)
 //     {
@@ -101,7 +116,7 @@ using System.Collections;
 //         }
 //         return a;
 //     }
-// }
+}
 
 
 // string s ="From: hgomez@magnus.acs.ohio-state.edu (Humberto L Gomez)\nsubject: MULTISYNC 3D NEC MONITOR FOR SALE\n\n\nI have an NEC multisync 3d monitor for sale. great condition. looks new. it is\n.28 dot pitch\nSVGA monitor that syncs from 15-38khz\n\nit is compatible with all aga amiga graphics modes.\nleave message if interested. make an offer.\n-- ";
@@ -152,54 +167,54 @@ using System.Collections;
 // }
 
 
-Stopwatch cloc = new Stopwatch();
-IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20 Newsgroups\20news-18828");
-
-LinkedList<IDocument> docs = new LinkedList<IDocument>();
-foreach (var item in docsID)
-{
-    docs.AddLast(new Document(item, Parser.NewsgroupParser));
-}
-
-cloc.Start();
-ReadTest(docs);
-cloc.Stop();
-
-Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
-cloc.Reset();
-
-cloc.Start();
-GVSMTermDoc vectorial = new GVSMTermDoc(docs);
-cloc.Stop();
-
-Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
-cloc.Reset();
-
-cloc.Start();
-SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
-cloc.Stop();
-
-Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+//Stopwatch cloc = new Stopwatch();
+//IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20 Newsgroups\20news-18828");
+//
+//LinkedList<IDocument> docs = new LinkedList<IDocument>();
+//foreach (var item in docsID)
+//{
+//    docs.AddLast(new Document(item, Parser.NewsgroupParser));
+//}
+//
+//cloc.Start();
+//ReadTest(docs);
+//cloc.Stop();
+//
+//Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
+//cloc.Reset();
+//
+//cloc.Start();
+//GVSMTermDoc vectorial = new GVSMTermDoc(docs);
+//cloc.Stop();
+//
+//Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
+//cloc.Reset();
+//
+//cloc.Start();
+//SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
+//cloc.Stop();
+//
+//Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
 // foreach (var item in results.Select(x => x.Title))
 // {
 //     System.Console.WriteLine(SearchItem.Convert(item));
 // }
 
-char ReadTest(IEnumerable<IDocument> docs)
-{
-    char a = '0';
-    foreach (var doc in docs)
-    {
-        foreach (var item in doc)
-        {
-            a = item;
-        }
-    }
-    return a;
-}
-
-System.Console.ReadKey();
+//char ReadTest(IEnumerable<IDocument> docs)
+//{
+//    char a = '0';
+//    foreach (var doc in docs)
+//    {
+//        foreach (var item in doc)
+//        {
+//            a = item;
+//        }
+//    }
+//    return a;
+//}
+//
+//System.Console.ReadKey();
 // x[0]= true;
 // x[1]= true;
 
