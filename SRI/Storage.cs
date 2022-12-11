@@ -9,6 +9,7 @@ using DP.Interface;
 using SRI.Interface;
 using Utils;
 using System.Text.Json;
+using System.Runtime.InteropServices;
 
 public abstract class Storage<T1, T2, V, D> : IStorage<T1, T2, V, D>, ICollection<D> where T1 : notnull where T2 : notnull
 {
@@ -298,7 +299,7 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
     public new double[] this[IDocument index] => GetKey2Vector(index);
     public double[] this[int index] => GetKey2Vector(index);
 
-    private const int saveSize = 1000;
+    private const int saveSize = 8000;
     private double[][]? actualDocs;
     private int actualIndex;
     private Dictionary<IDocument, int> docs;
@@ -329,16 +330,17 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
 
     private double[] GetKey2Vector(int doc)
     {
-        if ((int)(doc / saveSize) != actualIndex)
+        int index = (int)(doc / saveSize);
+        if (index != actualIndex)
         {
-            Stopwatch a = new Stopwatch();
-            a.Start();
-
-            var binary = File.ReadAllBytes($@".\DocSave\save{(int)(doc / saveSize)}");
-            actualDocs = JsonSerializer.Deserialize(binary, typeof(double[][])) as double[][];
-            actualIndex = (int)(doc / saveSize);
-            a.Stop();
-            System.Console.WriteLine($"time = {a.Elapsed}");
+            var binary = File.ReadAllBytes($@".\DocSave\save{index}");
+            var save = MemoryMarshal.Cast<byte, double>(binary);
+            actualDocs = new double[Math.Min(saveSize, save.Length / docspattern!.Length)][];
+            for (int i = 0; i < Math.Min(saveSize, save.Length / docspattern!.Length); i++)
+            {
+                actualDocs[i] = save.Slice(i * docspattern!.Length, docspattern!.Length).ToArray();
+            }
+            actualIndex = index;
         }
         return actualDocs![doc % saveSize];
     }
@@ -417,32 +419,32 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
         var files = Directory.GetFiles(@".\DocSave");
         foreach (var item in files)
             File.Delete(item);
-        var index = 0;
-        var save = new LinkedList<double[]>();
+        var docindex = 0;
+        var firstindex = 0;
+        var save = new double[saveSize * docspattern!.Length];
         foreach (var doc in MatrixStorage)
         {
-            double[] docVector = new double[docspattern!.Length];
             foreach (var item in doc.Value)
             {
                 if (!resultTerms.ContainsKey(item.Key)) continue;
                 foreach (var minterm in resultTerms[item.Key])
                 {
-                    docVector[minterm.Key] += minterm.Value;
+                    save[(docindex - firstindex) * saveSize + minterm.Key] += minterm.Value;
                 }
             }
-            if (index != 0 && index % saveSize == 0)
+            if ((docindex != 0 && docindex % saveSize == 0) || docindex == MatrixStorage.Count - 1)
             {
-                File.WriteAllBytes($@".\DocSave\save{(int)(index / saveSize) - 1}", JsonSerializer.SerializeToUtf8Bytes(save.ToArray()));
-                save.Clear();
-            }
-            save.AddLast(docVector);
-            index++;
-        }
+                int size = (docindex / saveSize) - (docindex == MatrixStorage.Count - 1 ? 0 : 1);
+                using (var writer = new BinaryWriter(File.Open($@".\DocSave\save{size}", FileMode.Create)))
+                {
 
-        if (index % saveSize != 0)
-        {
-            File.WriteAllBytes($@".\DocSave\save{(int)(index / saveSize)}", JsonSerializer.SerializeToUtf8Bytes(save.ToArray()));
-            save.Clear();
+                    var bytes = MemoryMarshal.Cast<double, byte>(save.AsSpan());
+                    writer.Write(bytes);
+                }
+                save = new double[Math.Min(saveSize, MatrixStorage.Count - docindex) * docspattern!.Length];
+                firstindex = docindex;
+            }
+            docindex++;
         }
 
         var writesavefile = File.CreateText(@".\DocSave\SaveManager");
