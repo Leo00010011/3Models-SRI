@@ -127,7 +127,7 @@ public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDo
 {
     public VSMTermDoc(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
 
-    public static IDictionary<string, IWeight> CreateQuery(IEnumerable<char> docs)
+    public IDictionary<string, IWeight> CreateQuery(IEnumerable<char> docs)
     {
         ProcesedDocument results = new ProcesedDocument(docs);
 
@@ -369,7 +369,7 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, string, int, IDoc
         return evaluation;
     }
 
-    public static IDictionary<int, string> CreateQuery(IEnumerable<char> docs)
+    public IDictionary<int, string> CreateQuery(IEnumerable<char> docs)
     {
         Utils.Porter2 porter_stem = new Utils.Porter2();
         Dictionary<int, string> query = new Dictionary<int, string>();
@@ -455,7 +455,7 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, string, int, IDoc
         index = 0;
         foreach (var item in ((VSMStorageTD)Storage).GetAllDocs())
         {
-            result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), (evaluate(score[index++], 0) ? 1 : 0));
+            result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), (evaluate(score[index++] != null ? score[index - 1] : new bool[query.Count], 0) ? 1 : 0));
         }
         return result;
     }

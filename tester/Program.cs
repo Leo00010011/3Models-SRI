@@ -153,23 +153,32 @@ using System.Collections;
 
 
 Stopwatch cloc = new Stopwatch();
-IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20 Newsgroups\20news-18828");
+IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20news-18828");
 
-LinkedList<IDocument> docs = new LinkedList<IDocument>();
+LinkedList<IDocument> docs1 = new LinkedList<IDocument>();
 foreach (var item in docsID)
 {
-    docs.AddLast(new Document(item, Parser.NewsgroupParser));
+    docs1.AddLast(new Document(item, Parser.NewsgroupParser));
 }
 
+// IEnumerable<IDocument> docs = docs1.Concat(new CollectionSplitter(@"D:\Studio\SRI\3Models-SRI\contents\Cran\cran.all.1400", new EndCranMatcherCreator(), Parser.CranParser));
+
+// docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\Reuters");
+
+// foreach (var item in docsID)
+// {
+//     docs = docs.Concat(new CollectionSplitter(item, new EndReutersMatcherCreator(), Parser.ReutersParser));
+// }
+
 cloc.Start();
-ReadTest(docs);
+ReadTest(docs1);
 cloc.Stop();
 
 Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
 cloc.Reset();
 
 cloc.Start();
-GVSMTermDoc vectorial = new GVSMTermDoc(docs);
+GVSMTermDoc vectorial = new GVSMTermDoc(docs1);
 cloc.Stop();
 
 Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
