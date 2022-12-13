@@ -166,14 +166,14 @@ namespace Test;
 //     System.Console.WriteLine($"{SearchItem.Convert(item.Title)} => {item.Score}");
 // }
 
-Stopwatch cloc = new Stopwatch();
-IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20news-18828");
+// Stopwatch cloc = new Stopwatch();
+// IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20news-18828");
 
-LinkedList<IDocument> docs1 = new LinkedList<IDocument>();
-foreach (var item in docsID)
-{
-    docs1.AddLast(new Document(item, Parser.NewsgroupParser));
-}
+// LinkedList<IDocument> docs1 = new LinkedList<IDocument>();
+// foreach (var item in docsID)
+// {
+//     docs1.AddLast(new Document(item, Parser.NewsgroupParser));
+// }
 
 // IEnumerable<IDocument> docs = docs1.Concat(new CollectionSplitter(@"D:\Studio\SRI\3Models-SRI\contents\Cran\cran.all.1400", new EndCranMatcherCreator(), Parser.CranParser));
 
@@ -184,25 +184,25 @@ foreach (var item in docsID)
 //     docs = docs.Concat(new CollectionSplitter(item, new EndReutersMatcherCreator(), Parser.ReutersParser));
 // }
 
-cloc.Start();
-ReadTest(docs1);
-cloc.Stop();
+// cloc.Start();
+// ReadTest(docs1);
+// cloc.Stop();
 
-Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
-cloc.Reset();
+// Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
+// cloc.Reset();
 
-cloc.Start();
-GVSMTermDoc vectorial = new GVSMTermDoc(docs1);
-cloc.Stop();
+// cloc.Start();
+// GVSMTermDoc vectorial = new GVSMTermDoc(docs1);
+// cloc.Stop();
 
-Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
-cloc.Reset();
+// Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
+// cloc.Reset();
 
-cloc.Start();
-SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
-cloc.Stop();
+// cloc.Start();
+// SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
+// cloc.Stop();
 
-Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+// Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
 // foreach (var item in results.Select(x => x.Title))
 // {

@@ -350,3 +350,40 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+Final report/aliascnt.sty
+Final report/eijkel2.eps
+Final report/final_report.aux
+.gitignore
+Final report/final_report.ps
+Final report/final_report.tex
+Final report/llncs.aux
+Final report/llncs.cls
+Final report/llncs.dvi
+Final report/llncs.fdb_latexmk
+Final report/llncs.pdf
+Final report/llncs.ps
+Final report/llncs.tex
+Final report/llncsdoc.aux
+Final report/llncsdoc.dvi
+Final report/llncsdoc.fdb_latexmk
+Final report/llncsdoc.pdf
+Final report/llncsdoc.ps
+Final report/llncsdoc.sty
+Final report/llncsdoc.tex
+Final report/llncsind.aux
+Final report/llncsind.fdb_latexmk
+Final report/llncsind.tex
+Final report/remreset.sty
+Final report/splncs03.bst
+Final report/sprmindx.sty
+Final report/subjidx.aux
+Final report/subjidx.fdb_latexmk
+Final report/subjidx.tex
+Final report/typeinst.aux
+Final report/typeinst.fdb_latexmk
+Final report/typeinst.tex
+Final report/final_report.bbl
+Final report/final_report.blg
+Final report/final_report.dvi
+Final report/final_report.fdb_latexmk
+.gitignore
