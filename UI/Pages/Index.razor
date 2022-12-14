@@ -82,19 +82,20 @@
         }
 
         <ul class="results">
-            @foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(30))
+
+            @foreach (var item in (result.Select((value, index) => (index, value)).TakeWhile(x => x.value.Score > 0)).Take(15))
             {
                 <li>
                     <div class="item">
-                        <a class="title"   target="_blank">@item.Title</a>
-                        <p>... @item.Snippet ...</p>
-                    </div>
+
+                        <a class="title" href=@Concat(@item.index)  target="_blank">@item.value.Title</a>
+                        <p>... @item.value.Snippet ...</p>
+                </div>
                 </li>
             }
         </ul>
     }
 }
-
 
 @code {
     private string query = "";
@@ -104,6 +105,7 @@
     private ISearchResult ? result;
     private IEnumerable<string> ? directories;
     private bool add_corpus_path=true;
+ 
     private bool vectorial = true;
     private bool boolean;
     private bool generalized_vectorial;
@@ -115,9 +117,9 @@
     private IEnumerable<IDocument> docs = new LinkedList<IDocument>();
     private bool Load = false;
 
-    private string Concat(string name,int id)
+    private string Concat(int id)
     {
-        return $"/Reader/Text/{name}/{id}";
+        return $"/Reader/Text/{id}";
     }
     private async Task LoadCollections()
     {
@@ -168,14 +170,16 @@
 
     }
 
-    private void load()
+    private async Task load()
     {
         if(!add_corpus_path)
         {
             vectorialModel =  new VSMTermDoc(docs);
             booleanModel =  new BSMTermDoc(docs); 
-            generalizedModel =  new GVSMTermDoc(docs);  *@
+            generalizedModel =  new GVSMTermDoc(docs); 
             Load = false;
+
+
         }
     }
 
@@ -249,7 +253,7 @@
            
             }
             else result= null;
-
+            Date.results = result;
         }
 
     }

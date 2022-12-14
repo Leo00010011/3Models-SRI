@@ -15,9 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages().AddRazorPagesOptions(options =>
     {
         options.Conventions.AddPageRoute("/Text", "Text/{id:int}");
-        options.Conventions.AddPageRoute("/Models/Search", "Models/Search");
-
-    });
+        });
 builder.Services.AddServerSideBlazor();
 
 var app = builder.Build();
