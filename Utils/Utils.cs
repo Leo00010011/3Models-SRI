@@ -23,6 +23,15 @@ public static class Utils
             yield return (char)sr.ReadByte();
     }
 
+    public static IEnumerable<T> DisposeAtEnd<K,T>(K iter) where K : IEnumerable<T>,IDisposable
+    {
+        foreach(var item in  iter)
+        {
+            yield return item;
+        }
+        iter.Dispose();
+    }
+
     public static int Peek(BufferedStream sr)
     {
         long prevPos = sr.UnderlyingStream.Position;
