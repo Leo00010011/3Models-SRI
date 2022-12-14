@@ -38,10 +38,13 @@
 }
 @if(!add_corpus_path && Load)
 {
-    <div class="spinner-border text-primary" role="status">
-      Loading <span class="visually-hidden">Loading...</span>
-    </div>
-    @load()
+ 
+
+<div class="align-items-center">
+  <h1 class="text-primary">Loading</h1>
+  <div class="spinner-border ms-auto text-primary" role="status" aria-hidden="true"></div>
+</div>
+    
 }
 @if(!add_corpus_path && !Load)
 {
@@ -83,8 +86,8 @@
             {
                 <li>
                     <div class="item">
-                        <a class="title" href=@Concat(@SearchItem.Convert(item.Title),)  target="_blank">@SearchItem.Convert(item.Title)</a>
-                        <p>... @SearchItem.Convert(item.Snippet) ...</p>
+                        <a class="title"   target="_blank">@item.Title</a>
+                        <p>... @item.Snippet ...</p>
                     </div>
                 </li>
             }
@@ -92,7 +95,6 @@
     }
 }
 
-<a href=@Concat(@l,15) target="_blank">click me</a>
 
 @code {
     private string query = "";
@@ -102,9 +104,6 @@
     private ISearchResult ? result;
     private IEnumerable<string> ? directories;
     private bool add_corpus_path=true;
-
-    private string l ="lola";
-    private int x = 15;
     private bool vectorial = true;
     private bool boolean;
     private bool generalized_vectorial;
@@ -120,7 +119,7 @@
     {
         return $"/Reader/Text/{name}/{id}";
     }
-    private void LoadCollections()
+    private async Task LoadCollections()
     {
         bool temp =true;
         for (int i = 0; i < corpus_path.Length; i++)
@@ -130,7 +129,7 @@
                 temp = false;
                 string temp_path = @"D:\Studio\SRI\3Models-SRI\contents"+corpus_path[i];
                 directories = Utils.ReadAllFiles(temp_path);
-                @* switch (i)
+                switch (i)
                 {
                     case 0:
                     {
@@ -158,22 +157,24 @@
                         }
                         break;
                     }
-                } *@
+                }
                
             }
         }
 
         add_corpus_path = temp;
         Load = !temp;
+        await Task.Run(()=> load());
+
     }
 
     private void load()
     {
         if(!add_corpus_path)
         {
-            vectorialModel = new VSMTermDoc(docs);
-            booleanModel = new BSMTermDoc(docs); 
-            generalizedModel = new GVSMTermDoc(docs); 
+            vectorialModel =  new VSMTermDoc(docs);
+            booleanModel =  new BSMTermDoc(docs); 
+            generalizedModel =  new GVSMTermDoc(docs);  *@
             Load = false;
         }
     }

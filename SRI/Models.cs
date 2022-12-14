@@ -64,20 +64,20 @@ public abstract class WModel<T1, T2, D> : SRIModel<T1, T2, IWeight, string, D>, 
 
 public abstract class WMDocTerm : WModel<IDocument, string, IDocument>, ISRIModel<IDocument, string, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public WMDocTerm(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageDT(corpus);
+    public WMDocTerm(IEnumerable<IDocument> corpus) => Storage = new VSMStorageDT(corpus);
 
     public override SearchItem[] GetSearchItems(IDictionary<string, IWeight> query, int snippetLen)
     {
         ((VSMStorageDT)Storage!).UpdateDocs(); /*analizar si es null*/ int count = 0; SearchItem[] result = new SearchItem[Storage.Count];
         foreach (var item in Storage)
-            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, ((VSMStorageDT)Storage)[item]));
+            result[count++] = new SearchItem(item, snippetLen, SimilarityRate(query, ((VSMStorageDT)Storage)[item]));
         return result;
     }
 }
 
 public class VSMDocTerm : WMDocTerm, ISRIModel<IDocument, string, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public VSMDocTerm(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
+    public VSMDocTerm(IEnumerable<IDocument> corpus) : base(corpus) { }
 
     public IDictionary<string, IWeight> CreateQuery(IEnumerable<char> docs)
     {
@@ -95,7 +95,7 @@ public class VSMDocTerm : WMDocTerm, ISRIModel<IDocument, string, IWeight, strin
 
 public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public WMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageTD(corpus);
+    public WMTermDoc(IEnumerable<IDocument> corpus) => Storage = new VSMStorageTD(corpus);
 
     public override SearchItem[] GetSearchItems(IDictionary<string, IWeight> query, int snippetLen)
     {
@@ -107,6 +107,7 @@ public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<stri
         foreach (var item in query)
         {
             queryscore += Math.Pow(item.Value.Weight, 2);
+            if (!((VSMStorageTD)Storage!).ContainsKey(item.Key)) continue;
             foreach (var item1 in ((VSMStorageTD)Storage!)[item.Key])
             {
                 var index = ((VSMStorageTD)Storage!).DocsFrecModal[item1.Key].Item1;
@@ -117,7 +118,7 @@ public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<stri
 
         foreach (var item in ((VSMStorageTD)Storage).GetAllDocs())
         {
-            result[count] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), score[count++] / (queryscore * item.Item2));
+            result[count] = new SearchItem(item.Item1, snippetLen, score[count++] / (queryscore * item.Item2));
         }
         return result;
     }
@@ -125,7 +126,7 @@ public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<stri
 
 public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public VSMTermDoc(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
+    public VSMTermDoc(IEnumerable<IDocument> corpus) : base(corpus) { }
 
     public IDictionary<string, IWeight> CreateQuery(IEnumerable<char> docs)
     {
@@ -142,7 +143,7 @@ public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDo
 
 public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public GVSMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new GVSMStorageDT(corpus);
+    public GVSMTermDoc(IEnumerable<IDocument> corpus) : base(corpus) => Storage = new GVSMStorageDT(corpus);
 
     public SearchItem[] GetSearchItems(double[] query, int snippetLen)
     {
@@ -151,7 +152,7 @@ public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, ID
 
         foreach (var item in ((GVSMStorageDT)Storage))
         {
-            result[count++] = new SearchItem(item.Id, item.Name, item.GetSnippet(snippetLen), SimilarityRate(query, ((GVSMStorageDT)Storage)![item]));
+            result[count++] = new SearchItem(item, snippetLen, SimilarityRate(query, ((GVSMStorageDT)Storage)![item]));
         }
         return result;
     }
@@ -172,7 +173,7 @@ public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, ID
         }
         normaDoc2 = Math.Sqrt(normaDoc2);
 
-        return scalarMul / (normaDoc1 * normaDoc2);
+        return (normaDoc1 != 0 && normaDoc2 != 0) ? scalarMul / (normaDoc1 * normaDoc2) : 0;
     }
 
     public double[] CreateQuery(IEnumerable<char> docs)
@@ -181,6 +182,7 @@ public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, ID
         double[] temp = new double[(Storage as GVSMStorageDT)!.DocsLength];
         foreach ((string, int) item1 in results)
         {
+            if (!(Storage as GVSMStorageDT)!.ContainsKey(item1.Item1)) continue;
             foreach (var item2 in (Storage as GVSMStorageDT)!.GetKey1Vector(item1.Item1))
             {
                 temp[item2.Key] += item2.Value;
@@ -194,7 +196,7 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, string, int, IDoc
 {
     private static BooleanNode root;
 
-    public BSMTermDoc(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
+    public BSMTermDoc(IEnumerable<IDocument> corpus) : base(corpus) { }
     private static void create_query_ast(List<TokenLexem> tokenized)
     {
         BSMTermDoc.root = null;
@@ -420,10 +422,6 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, string, int, IDoc
         }
         if (!string.IsNullOrEmpty(token)) { query.Add(count++, porter_stem.stem(token.ToLower())); tokenized.Add(TokenLexem.word); }
         tokenized.Add(TokenLexem.EOF);
-        foreach (var item in tokenized)
-        {
-            System.Console.WriteLine(item);
-        }
         BSMTermDoc.create_query_ast(tokenized);
         return query;
     }
@@ -444,18 +442,21 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, string, int, IDoc
                 }
             }
             else
+            {
+                if (!((VSMStorageTD)Storage!).ContainsKey(item.Value)) continue;
                 foreach (var item1 in ((VSMStorageTD)Storage!)[item.Value])
                 {
                     var value = (Storage as VSMStorageTD)!.DocsFrecModal[item1.Key].Item1;
                     if (score[value] == null) score[value] = new bool[query.Count];
                     score[value][index] = true;
                 }
+            }
             index++;
         }
         index = 0;
         foreach (var item in ((VSMStorageTD)Storage).GetAllDocs())
         {
-            result[index] = new SearchItem(item.Item1.Id, item.Item1.Name, item.Item1.GetSnippet(snippetLen), (evaluate(score[index++] != null ? score[index - 1] : new bool[query.Count], 0) ? 1 : 0));
+            result[index] = new SearchItem(item.Item1, snippetLen, (evaluate(score[index++] != null ? score[index - 1] : new bool[query.Count], 0) ? 1 : 0));
         }
         return result;
     }
@@ -463,5 +464,15 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, string, int, IDoc
     public double SimilarityRate(IDictionary<string, string> doc1, IDictionary<string, string> doc2)
     {
         throw new NotImplementedException();
+    }
+
+    public static string ConvertToBooleanQuery(string query)
+    {
+        var procesed = new ProcesedDocument(query).GetEnumerator();
+        procesed.MoveNext();
+
+        string result = procesed.Current.Item1;
+        for (; procesed.MoveNext(); result += "&" + procesed.Current) ;
+        return result;
     }
 }

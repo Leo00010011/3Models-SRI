@@ -3,9 +3,7 @@ using Utils;
 using System.Collections;
 namespace DP;
 
-
 #nullable disable
-
 
 public enum stateDoc
 {
@@ -56,9 +54,9 @@ public class LazyKMP : ILazyMatcher
         int k = 0;
         for (int i = 1; i < pattern.Length; i++)
         {
-            while(k > 0 && pattern[k] != pattern[i])
+            while (k > 0 && pattern[k] != pattern[i])
                 k = pi[k - 1];
-            if( pattern[k] == pattern[i])
+            if (pattern[k] == pattern[i])
                 k++;
             pi[i] = k;
         }
@@ -67,16 +65,16 @@ public class LazyKMP : ILazyMatcher
 
     public bool MatchStep(char step)
     {
-        if(indexToMatch == pattern.Length)
+        if (indexToMatch == pattern.Length)
             indexToMatch = 0;
 
         bool result = false;
-        while(indexToMatch > 0 && pattern[indexToMatch] != step)
+        while (indexToMatch > 0 && pattern[indexToMatch] != step)
             indexToMatch = pi[indexToMatch - 1];
-        if(pattern[indexToMatch] == step)
+        if (pattern[indexToMatch] == step)
             result = true;
-            indexToMatch++;
-        
+        indexToMatch++;
+
         return result;
     }
 
@@ -84,11 +82,11 @@ public class LazyKMP : ILazyMatcher
     {
         bool result = false;
         int temp = indexToMatch;
-        if(indexToMatch == pattern.Length)
+        if (indexToMatch == pattern.Length)
             temp = 0;
-        while(temp > 0 && pattern[temp] != step)
+        while (temp > 0 && pattern[temp] != step)
             temp = pi[temp - 1];
-        if(pattern[indexToMatch] == step)
+        if (pattern[indexToMatch] == step)
             result = true;
         return result;
     }
@@ -107,7 +105,7 @@ public class LazyKMP : ILazyMatcher
 
     public bool Match(string text)
     {
-        if(text.Length < pattern.Length)
+        if (text.Length < pattern.Length)
             return false;
         return this.Match((IEnumerable<char>)text);
     }
@@ -127,7 +125,7 @@ public class LazyKMP : ILazyMatcher
 
 public class ConsecutiveNumberMatcher : ILazyMatcher
 {
-    public bool AtFinalState 
+    public bool AtFinalState
     {
         get;
         private set;
@@ -140,9 +138,9 @@ public class ConsecutiveNumberMatcher : ILazyMatcher
 
     public bool Match(IEnumerable<char> text)
     {
-        foreach(char item in text)
+        foreach (char item in text)
         {
-            if(!Char.IsDigit(item))
+            if (!Char.IsDigit(item))
             {
                 return false;
             }
@@ -170,7 +168,7 @@ public class ConsecutiveNumberMatcher : ILazyMatcher
     {
         AtFinalState = false;
     }
-    
+
 }
 
 public class EndCranMatcherCreator : ICreator<ILazyMatcher>
@@ -213,7 +211,7 @@ public class EndCranMatcher : ILazyMatcher
 
     public bool Match(string text)
     {
-        if(text.Length < 4)
+        if (text.Length < 4)
         {
             return false;
         }
@@ -225,7 +223,7 @@ public class EndCranMatcher : ILazyMatcher
         indexToMatch = 0;
         state = State.firstPattern;
         AtFinalState = false;
-        foreach(char item in text)
+        foreach (char item in text)
         {
             MatchStep(item);
         }
@@ -238,7 +236,7 @@ public class EndCranMatcher : ILazyMatcher
 
     public bool PeekStep(char step)
     {
-        switch(state)
+        switch (state)
         {
             case State.firstPattern:
                 return PeekFirstPattern(step);
@@ -251,7 +249,7 @@ public class EndCranMatcher : ILazyMatcher
     }
     public bool MatchStep(char step)
     {
-        switch(state)
+        switch (state)
         {
             case State.firstPattern:
                 return MatchFirstPattern(step);
@@ -271,11 +269,11 @@ public class EndCranMatcher : ILazyMatcher
     private bool MatchFirstPattern(char step)
     {
         AtFinalState = false;
-        
-        if(firstPattern[indexToMatch] == step)
+
+        if (firstPattern[indexToMatch] == step)
         {
             indexToMatch++;
-            if(indexToMatch == firstPattern.Length)
+            if (indexToMatch == firstPattern.Length)
             {
                 state = State.secondPattern;
                 indexToMatch = 0;
@@ -297,13 +295,13 @@ public class EndCranMatcher : ILazyMatcher
     private bool MatchSecondPattern(char step)
     {
         AtFinalState = false;
-        if(Char.IsDigit(step))
+        if (Char.IsDigit(step))
         {
             return true;
         }
         else
         {
-            if(PeekThirdPattern(step))
+            if (PeekThirdPattern(step))
             {
                 state = State.thirdPattern;
                 indexToMatch = 0;
@@ -326,7 +324,7 @@ public class EndCranMatcher : ILazyMatcher
     private bool MatchThirdPattern(char step)
     {
         AtFinalState = false;
-        if(thirdPattern == step)
+        if (thirdPattern == step)
         {
             indexToMatch = 0;
             state = State.firstPattern;
@@ -358,6 +356,43 @@ public class EndCranMatcher : ILazyMatcher
     }
 }
 
+public class CranJsonDocument : IDocument, IComparable
+{
+    string doc_id;
+    string title;
+    string text;
+    DateTime modifiedDateTime;
+
+    public CranJsonDocument(string doc_id, string title, string text)
+    {
+        this.doc_id = doc_id;
+        this.title = title;
+        this.text = text;
+    }
+
+    public string Id => doc_id;
+
+    public IEnumerable<char> Name => title;
+
+    public IEnumerable<char> GetSnippet(int snippetLen) => text.Take(snippetLen);
+
+    public virtual stateDoc GetState()
+    {
+        return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(@".\contents\docs_save"))) ? stateDoc.notchanged : stateDoc.changed;
+    }
+
+    public virtual void UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(@".\contents\docs_save");
+
+    public override bool Equals(object? obj) => obj is CranJsonDocument document && modifiedDateTime == document.modifiedDateTime && Id == document.Id;
+    public override int GetHashCode() => Id.GetHashCode();
+
+    public int CompareTo(object? obj) => obj is CranJsonDocument document ? document.Id.CompareTo(Id) : throw new InvalidCastException();
+
+    public IEnumerator<char> GetEnumerator() => (title as IEnumerable<char>).Concat(text).GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    public string GetDocText() => text;
+}
 
 public class Document : IDocument, IComparable
 {
@@ -408,6 +443,8 @@ public class Document : IDocument, IComparable
         StreamReader reader = new StreamReader(path);
         foreach (var item in GetChars(reader))
             yield return item;
+        reader.BaseStream.Close();
+        reader.Dispose();
         reader.Close();
     }
 
@@ -418,6 +455,8 @@ public class Document : IDocument, IComparable
         int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
         foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
             yield return item;
+        reader.BaseStream.Close();
+        reader.Dispose();
         reader.Close();
     }
 
@@ -430,27 +469,26 @@ public class Document : IDocument, IComparable
     public virtual void  UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(path);
 
     public virtual IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
-    
+
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-    public override bool Equals(object? obj) => obj is Document document && modifiedDateTime == document.modifiedDateTime && path == document.path;
+    public override bool Equals(object? obj) => obj is Document document && modifiedDateTime == document.modifiedDateTime && Id == document.Id;
 
-    public override int GetHashCode() => path.GetHashCode();
+    public override int GetHashCode() => Id.GetHashCode();
 
     public int CompareTo(object? obj)
     {
-        return obj is Document document ? document.path.CompareTo(path) : throw new InvalidCastException();
+        return obj is Document document ? document.Id.CompareTo(Id) : throw new InvalidCastException();
     }
 
-    public virtual (string, string) GetDocText()
+    public virtual string GetDocText()
     {
         string result;
-        string name = String.Concat(Name);
         using(StreamReader sr = new StreamReader(File.Open(path,FileMode.Open)))
         {
             result = sr.ReadToEnd();
         }
-        return (name,result);
+        return result;
     }
 }
 
@@ -539,7 +577,10 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
     public IEnumerator<IDocument> GetEnumerator()
     {
         if(Disposed)
-            throw new ObjectDisposedException("LLamaron Dispose() en este CollectionSplitter");
+        {
+            stream = new BufferedStream(File.Open(collectionPath, FileMode.Open));
+            Disposed = false;
+        }  
         if(!streamUsed)
         {
             streamUsed = true;
@@ -670,7 +711,6 @@ public class EmbebedDocument : Document
             yield return item;
         
         DevolverStream(localStream,openedHere,prevPos);
-        
     }
     
     public bool EndReached
@@ -686,7 +726,7 @@ public class EmbebedDocument : Document
     }
 
     bool enumeratorSended = false;
-
+    
     public long InitPos
     {
         get => initPos;
@@ -755,9 +795,8 @@ public class EmbebedDocument : Document
             localStream.UnderlyingStream.Position = prevPos;
         }
     }
-    public override (string,string) GetDocText()
+    public override string GetDocText()
     {
-        string name = String.Concat(Name);
         string result;
         var streamInfo = GetLocalStream();
         BufferedStream localStream = streamInfo.Item1;
@@ -767,7 +806,7 @@ public class EmbebedDocument : Document
         localStream.Read(arr,0,(int)length);
         result = String.Concat(arr.Select((c,index) => (char)c));
         DevolverStream(localStream,openedHere,prevPos);
-        return (name,result);
+        return result;
 
     }
     public override  IEnumerator<char> GetEnumerator()
@@ -781,9 +820,6 @@ public class EmbebedDocument : Document
     }
  
 }
-
-
-
 public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
 {
     Dictionary<string, int>? frecs;
@@ -812,18 +848,18 @@ public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
 
     void CompFrecs()
     {
-        Utils.Porter2 porter_stem =  new Utils.Porter2();   
+        Utils.Porter2 porter_stem = new Utils.Porter2();
         frecs = new Dictionary<string, int>();
 
 
         foreach (string item in Utils.Utils.GetTerms(Result))
-        {   
+        {
             string item1 = item.ToLower();
             if (!Utils.Utils.GetStopWords().Contains(item1))
             {
                 item1 = porter_stem.stem(item1);
                 int val;
-                
+
                 if (frecs.TryGetValue(item1, out val))
                 {
                     frecs[item1] = val + 1;

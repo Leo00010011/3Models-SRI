@@ -175,35 +175,36 @@ public class SRIVectorDic<K, V> : ISRIVector<K, V> where K : notnull
 /// </summary>
 public class SearchItem
 {
-    public SearchItem(string URL, IEnumerable<char> title, IEnumerable<char> snippet, double score)
+    IDocument doc;
+    int snippetLen;
+    public SearchItem(IDocument doc, int snippetLen, double score)
     {
-        this.URL = URL;
-        this.Title = title;
-        this.Snippet = snippet;
+        this.doc = doc;
         this.Score = score;
+        this.snippetLen = snippetLen;
     }
 
     /// <summary>
     /// Dirección del documento recuperado
     /// </summary>
-    public string URL { get; private set; }
+    public string URL => doc.Id;
 
     /// <summary>
     /// Título del documento recuperado
     /// </summary>
-    public IEnumerable<char> Title { get; private set; }
-
-    public static string Convert(IEnumerable<char> str) => string.Concat(str);
+    public string Title => String.Concat(doc.Name);
 
     /// <summary>
     /// Pequeña representación del documento recuperado
     /// </summary>
-    public IEnumerable<char> Snippet { get; private set; }
+    public string Snippet => String.Concat(doc.GetSnippet(snippetLen));
 
     /// <summary>
     /// Peso del documento según el modelo empleado
     /// </summary>
     public double Score { get; private set; }
+
+    public string GetText() => doc.GetDocText();
 }
 
 /// <summary>
