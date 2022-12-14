@@ -82,7 +82,7 @@
             {
                 <li>
                     <div class="item">
-                        <a class="title" href=@item.URL>@SearchItem.Convert(item.Title)</a>
+                        <a class="title" href=@Concat(@SearchItem.Convert(item.Title),@SearchItem.id)  target="_blank">@SearchItem.Convert(item.Title)</a>
                         <p>... @SearchItem.Convert(item.Snippet) ...</p>
                     </div>
                 </li>
@@ -91,16 +91,19 @@
     }
 }
 
+<a href=@Concat(@l,15) target="_blank">click me</a>
 
 @code {
     private string query = "";
-    private string [] corpus_path = new string []{"\\20News", "\\Reuters" ,"\\Cran"};
+    private string [] corpus_path = new string []{"\\20news", "\\Reuters" ,"\\Cran"};
     private bool [] selected_corpus_path = new bool[]{true, false,false};
     
     private ISearchResult ? result;
     private IEnumerable<string> ? directories;
     private bool add_corpus_path=true;
 
+    private string l ="lola";
+    private int x = 15;
     private bool vectorial = true;
     private bool boolean;
     private bool generalized_vectorial;
@@ -112,6 +115,10 @@
     private IEnumerable<IDocument> docs = new LinkedList<IDocument>();
     private bool Load = false;
 
+    private string Concat(string name,int id)
+    {
+        return $"/Reader/Text/{name}/{id}";
+    }
     private void LoadCollections()
     {
         bool temp =true;
