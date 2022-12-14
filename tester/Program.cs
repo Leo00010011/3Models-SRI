@@ -87,21 +87,40 @@ namespace Test;
         // {
         //     System.Console.WriteLine(SearchItem.Convert(item));
         // }
-        //var temp = new CollectionSplitter(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\Reuters\reut2-000.sgm",new EndReutersMatcherCreator(),Utils.Parser.ReutersParser);
-        //foreach(var doc in temp)
-        //{
-        //    System.Console.WriteLine(doc.Id);
-        //}
-
-        var temp = File.Open(@"C:\Users\Leo pc\Desktop\SRI\Pf\3Models-SRI\tester\test.txt",FileMode.Open);
-        var reader1 = new BufferedStream(temp);
-        var reader2 = new BufferedStream(temp);
-        reader2.Seek(4,SeekOrigin.Begin);
-        reader1.UnderlyingStream.Position = 0;
-        char ch1 = (char)reader1.ReadByte();
-        reader1.UnderlyingStream.Position = 4;
-        char ch2 = (char)reader2.ReadByte();
+        var temp = new CollectionSplitter(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\Reuters\reut2-000.sgm",new EndReutersMatcherCreator(),Utils.Parser.ReutersParser);
+        //
+        List<IDocument> list = new List<IDocument>();
+        
+        foreach(var doc in temp)
+        {
+            int Length = 0;
+            list.Add(doc);
+            foreach(char item in doc)
+            {
+                Length++;
+            }
+        }
+        temp.Dispose();
+        System.Console.WriteLine("Final de los textos " + list.Count);
         Console.ReadLine();
+       
+        while(true)
+        {
+            int index = int.Parse(Console.ReadLine());
+            if(index == -1)
+            {
+                break;
+            }
+            else
+            {
+                System.Console.WriteLine(list[index].GetDocText().Item2);
+            }
+        }
+
+
+        
+
+        
     }
 
 //     private static char ReadTest(IEnumerable<IDocument> docs)
