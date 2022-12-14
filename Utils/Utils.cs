@@ -1,4 +1,6 @@
-﻿namespace Utils;
+﻿using System.Collections;
+
+namespace Utils;
 
 public static class Utils
 {

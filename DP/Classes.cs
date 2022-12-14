@@ -442,7 +442,16 @@ public class Document : IDocument, IComparable
         return obj is Document document ? document.path.CompareTo(path) : throw new InvalidCastException();
     }
 
-
+    public virtual (string, string) GetDocText()
+    {
+        string result;
+        string name = String.Concat(Name);
+        using(StreamReader sr = new StreamReader(File.Open(path,FileMode.Open)))
+        {
+            result = sr.ReadToEnd();
+        }
+        return (name,result);
+    }
 }
 
 public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
@@ -569,6 +578,8 @@ public class EmbebedDocument : Document
 
         bool lastReached = false;
 
+        long count = 0;
+
         EmbebedDocument enumerable;
 
         ParsedInfo info = null;
@@ -592,14 +603,17 @@ public class EmbebedDocument : Document
 
             if(item == -1)
             {
+                enumerable.length = count;
                 enumerable.EndOfFileReached = true;
                 enumerable.EndReached = true;
                 return false;
             }
             Current = (char)item;
             matcher.MatchStep(Current);
+            count++;
             if(matcher.AtFinalState)
             {
+                enumerable.length = count;
                 lastReached = true;
                 enumerable.EndReached = true;
                 Current = (char)item;
@@ -655,6 +669,8 @@ public class EmbebedDocument : Document
         foreach (var item in Utils.Utils.StreamToEnumerable(localStream).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
             yield return item;
         
+        DevolverStream(localStream,openedHere,prevPos);
+        
     }
     
     public bool EndReached
@@ -671,7 +687,19 @@ public class EmbebedDocument : Document
 
     bool enumeratorSended = false;
 
+    public long InitPos
+    {
+        get => initPos;
+    }
+
+    public long Length
+    {
+        get => length;
+    }
+
     long initPos = -1;
+
+    long length = -1;
 
     ParsedInfo info = null;
 
@@ -727,7 +755,21 @@ public class EmbebedDocument : Document
             localStream.UnderlyingStream.Position = prevPos;
         }
     }
+    public override (string,string) GetDocText()
+    {
+        string name = String.Concat(Name);
+        string result;
+        var streamInfo = GetLocalStream();
+        BufferedStream localStream = streamInfo.Item1;
+        bool openedHere = streamInfo.Item2;
+        long prevPos = streamInfo.Item3;
+        byte[] arr = new byte[length];
+        localStream.Read(arr,0,(int)length);
+        result = String.Concat(arr.Select((c,index) => (char)c));
+        DevolverStream(localStream,openedHere,prevPos);
+        return (name,result);
 
+    }
     public override  IEnumerator<char> GetEnumerator()
     {
         if(!enumeratorSended)

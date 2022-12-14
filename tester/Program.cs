@@ -89,70 +89,35 @@ namespace Test;
         // }
         var temp = new CollectionSplitter(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\Reuters\reut2-000.sgm",new EndReutersMatcherCreator(),Utils.Parser.ReutersParser);
         //
-        LinkedList<IDocument> list = new LinkedList<IDocument>();
+        List<IDocument> list = new List<IDocument>();
         
         foreach(var doc in temp)
         {
             int Length = 0;
-            list.AddLast(doc);
+            list.Add(doc);
             foreach(char item in doc)
             {
                 Length++;
             }
         }
-
-        System.Console.WriteLine("Final de los textos");
+        temp.Dispose();
+        System.Console.WriteLine("Final de los textos " + list.Count);
         Console.ReadLine();
-
-        foreach(var doc in list)
+       
+        while(true)
         {
-            System.Console.WriteLine(String.Concat(doc.Name));
-            System.Console.WriteLine("----------------------------------");
+            int index = int.Parse(Console.ReadLine());
+            if(index == -1)
+            {
+                break;
+            }
+            else
+            {
+                System.Console.WriteLine(list[index].GetDocText().Item2);
+            }
         }
 
-        System.Console.WriteLine("Final de los nombres");
-        Console.ReadLine();
-        
-        foreach(var doc in list)
-        {
-            System.Console.WriteLine(String.Concat(doc.GetSnippet(20)));
-            System.Console.WriteLine("----------------------------------");
-        }
 
-        System.Console.WriteLine("Final de los Snippets");
-        Console.ReadLine();
-        
-        foreach(var doc in list)
-        {
-            System.Console.WriteLine(String.Concat(doc.Name));
-            System.Console.WriteLine("---------------------------------------");
-            System.Console.WriteLine(String.Concat(doc.GetSnippet(20)));
-            System.Console.WriteLine("######################################");
-        }
-
-        System.Console.WriteLine("Final de los Nombres Con Snippets");
-        Console.ReadLine();
-        
-
-
-        // var temp = new BufferedStream(File.Open(@"C:\Users\Leo pc\Desktop\SRI\Pf\3Models-SRI\tester\test.txt",FileMode.Open));
-        // int current;
-        // int index = 0;
-        // Console.WriteLine(">>>>>>>>>>>>>");
-        // while((current = temp.ReadByte()) != -1)
-        // {
-        //     Console.Write((char)current);
-        //     if(index == 9)
-        //     {
-        //         int result = Utils.Utils.Peek(temp);
-        //         bool canR = temp.CanRead;
-        //         Console.WriteLine("askska");
-        //     }
-        //     index++;
-        // }
-        // Console.WriteLine(index);
-        // Console.WriteLine(">>>>>>>>>>>>>");
-        
         
 
         
