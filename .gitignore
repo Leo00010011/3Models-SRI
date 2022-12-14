@@ -387,3 +387,9 @@ Final report/final_report.blg
 Final report/final_report.dvi
 Final report/final_report.fdb_latexmk
 .gitignore
+Final report/typeinst.dvi
+Final report/typeinst.pdf
+Final report/typeinst.ps
+.gitignore
+Final report/final_report.synctex.gz
+Final report/final_report.out

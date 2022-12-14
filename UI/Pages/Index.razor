@@ -41,6 +41,7 @@
     <div class="spinner-border text-primary" role="status">
       Loading <span class="visually-hidden">Loading...</span>
     </div>
+    @load()
 }
 @if(!add_corpus_path && !Load)
 {
@@ -78,11 +79,11 @@
         }
 
         <ul class="results">
-            @foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(15))
+            @foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(30))
             {
                 <li>
                     <div class="item">
-                        <a class="title" href=@Concat(@SearchItem.Convert(item.Title),@SearchItem.id)  target="_blank">@SearchItem.Convert(item.Title)</a>
+                        <a class="title" href=@Concat(@SearchItem.Convert(item.Title),)  target="_blank">@SearchItem.Convert(item.Title)</a>
                         <p>... @SearchItem.Convert(item.Snippet) ...</p>
                     </div>
                 </li>
@@ -162,17 +163,19 @@
             }
         }
 
-        if(!temp)
+        add_corpus_path = temp;
+        Load = !temp;
+    }
+
+    private void load()
+    {
+        if(!add_corpus_path)
         {
-            add_corpus_path = false;
-            Load = true;
             vectorialModel = new VSMTermDoc(docs);
             booleanModel = new BSMTermDoc(docs); 
             generalizedModel = new GVSMTermDoc(docs); 
+            Load = false;
         }
-        Load = false;
-
-
     }
 
     /// <summary>
