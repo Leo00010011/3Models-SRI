@@ -21,6 +21,7 @@ public interface IDocument : IEnumerable<char>
     void UpdateDateTime();
 
     IEnumerable<char> GetSnippet(int snippetLen);
+
 }
 
 public interface IResult<TValue, KKey, MPiece> : IEnumerable<(KKey, MPiece)>

@@ -441,6 +441,8 @@ public class Document : IDocument, IComparable
     {
         return obj is Document document ? document.path.CompareTo(path) : throw new InvalidCastException();
     }
+
+
 }
 
 public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
@@ -479,9 +481,9 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
             if(disposed)
                 return false;
 
-            if(current == null || (!current.EndOfFileReached && current.EndReached))
+            if(current == null || (!current.EndOfFileReached && Utils.Utils.Peek(enumerable.stream) != -1 && current.EndReached))
             {
-                current = new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator);
+                current = new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable);
                 index++;
                 return true;
             }
@@ -504,7 +506,11 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
     
     string collectionPath;
 
-    bool disposed = false;
+    public bool Disposed
+    {
+        get; 
+        private set;
+    }
 
     bool streamUsed = false;
 
@@ -512,7 +518,7 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
 
     ICreator<ILazyMatcher> endMatcherCreator;
 
-    Stream stream;
+    BufferedStream stream;
     public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> endMatcherCreator, Func<IEnumerable<char>, ParsedInfo> parser)
     {
         this.collectionPath = collectionPath;
@@ -523,7 +529,7 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
 
     public IEnumerator<IDocument> GetEnumerator()
     {
-        if(disposed)
+        if(Disposed)
             throw new ObjectDisposedException("LLamaron Dispose() en este CollectionSplitter");
         if(!streamUsed)
         {
@@ -539,11 +545,12 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
 
     public void Dispose()
     {
-        if(!disposed)
+        if(!Disposed)
         {
             stream.Dispose();
+            streamUsed = false;
             stream = null;
-            disposed = true;
+            Disposed = true;
         }
     }
 }
@@ -563,6 +570,8 @@ public class EmbebedDocument : Document
         bool lastReached = false;
 
         EmbebedDocument enumerable;
+
+        ParsedInfo info = null;
 
         ILazyMatcher matcher;
 
@@ -610,9 +619,43 @@ public class EmbebedDocument : Document
         }
     }
 
-    public override IEnumerable<char> Name => throw new NotImplementedException();
+    public override IEnumerable<char> Name// => throw new Exception();
+    {
+        get
+        {
+            var streamInfo = GetLocalStream();
+            BufferedStream localStream = streamInfo.Item1;
+            bool openedHere = streamInfo.Item2;
+            long prevPos = streamInfo.Item3;
+            
+            if(info == null)
+                info = parser(Utils.Utils.StreamToEnumerable(localStream));
+            localStream.Seek(initPos,SeekOrigin.Begin);
 
-    public override IEnumerable<char> GetSnippet(int snippetLen) => throw new NotImplementedException();
+            foreach (var item in Utils.Utils.StreamToEnumerable(localStream).Skip(info.TitleInit).Take(info.TitleLen))
+                yield return item;
+            
+            DevolverStream(localStream,openedHere,prevPos);
+        }
+    }
+
+    public override IEnumerable<char> GetSnippet(int snippetLen)
+    {
+        
+        var streamInfo = GetLocalStream();
+        BufferedStream localStream = streamInfo.Item1;
+        bool openedHere = streamInfo.Item2;
+        long prevPos = streamInfo.Item3;
+        
+        if(info == null)
+            info = parser(Utils.Utils.StreamToEnumerable(localStream));
+        localStream.Seek(initPos,SeekOrigin.Begin);
+        
+        int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
+        foreach (var item in Utils.Utils.StreamToEnumerable(localStream).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
+            yield return item;
+        
+    }
     
     public bool EndReached
     {
@@ -628,19 +671,61 @@ public class EmbebedDocument : Document
 
     bool enumeratorSended = false;
 
-    Stream stream;
+    long initPos = -1;
+
+    ParsedInfo info = null;
+
+    BufferedStream stream;
 
     ICreator<ILazyMatcher> endMatcherCreator;
 
     Func<IEnumerable<char>, ParsedInfo> parser;
 
-    public EmbebedDocument(string id,int index,Stream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher) : base(id, parser)
+    CollectionSplitter splitter;
+
+    public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter) : base(id, parser)
     {
+        this.splitter = splitter;
         path = id;
         Id = path + "\\" + index;
         this.stream = stream;
+        this.initPos = stream.Position;
         this.endMatcherCreator = endMatcher;
         this.parser = parser;
+    }
+
+    (BufferedStream,bool,long) GetLocalStream()
+    {
+        bool openedHere = false;
+        BufferedStream localStream;
+        long prevPos = -1;
+        if(splitter.Disposed)
+        {
+            openedHere = true;
+            localStream = new BufferedStream(File.Open(path,FileMode.Open));
+        }
+        else
+        {
+            prevPos = stream.UnderlyingStream.Position;
+            stream.UnderlyingStream.Position = 0;
+            localStream = new BufferedStream(stream.UnderlyingStream);
+        }
+        localStream.Seek(initPos,SeekOrigin.Begin);
+
+        return (localStream,openedHere,prevPos);
+    }
+
+    void DevolverStream(BufferedStream localStream, bool openedHere, long prevPos)
+    {
+        if(openedHere)
+        {
+            localStream.Dispose();
+        }
+        else
+        {
+            localStream.Flush();
+            localStream.UnderlyingStream.Position = prevPos;
+        }
     }
 
     public override  IEnumerator<char> GetEnumerator()

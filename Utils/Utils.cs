@@ -19,7 +19,16 @@ public static class Utils
     {
         while (!(sr.Position == sr.Length))
             yield return (char)sr.ReadByte();
-        sr.Dispose();
+    }
+
+    public static int Peek(BufferedStream sr)
+    {
+        long prevPos = sr.UnderlyingStream.Position;
+        var fd = sr.UnderlyingStream;
+        fd.Position = sr.Position;
+        int result = fd.ReadByte();
+        fd.Position = prevPos;
+        return result;
     }
 
     public static IEnumerable<string> ReadAllFiles(string path)
