@@ -56,9 +56,9 @@ public class LazyKMP : ILazyMatcher
         int k = 0;
         for (int i = 1; i < pattern.Length; i++)
         {
-            while(k > 0 && pattern[k] != pattern[i])
+            while (k > 0 && pattern[k] != pattern[i])
                 k = pi[k - 1];
-            if( pattern[k] == pattern[i])
+            if (pattern[k] == pattern[i])
                 k++;
             pi[i] = k;
         }
@@ -67,16 +67,16 @@ public class LazyKMP : ILazyMatcher
 
     public bool MatchStep(char step)
     {
-        if(indexToMatch == pattern.Length)
+        if (indexToMatch == pattern.Length)
             indexToMatch = 0;
 
         bool result = false;
-        while(indexToMatch > 0 && pattern[indexToMatch] != step)
+        while (indexToMatch > 0 && pattern[indexToMatch] != step)
             indexToMatch = pi[indexToMatch - 1];
-        if(pattern[indexToMatch] == step)
+        if (pattern[indexToMatch] == step)
             result = true;
-            indexToMatch++;
-        
+        indexToMatch++;
+
         return result;
     }
 
@@ -84,11 +84,11 @@ public class LazyKMP : ILazyMatcher
     {
         bool result = false;
         int temp = indexToMatch;
-        if(indexToMatch == pattern.Length)
+        if (indexToMatch == pattern.Length)
             temp = 0;
-        while(temp > 0 && pattern[temp] != step)
+        while (temp > 0 && pattern[temp] != step)
             temp = pi[temp - 1];
-        if(pattern[indexToMatch] == step)
+        if (pattern[indexToMatch] == step)
             result = true;
         return result;
     }
@@ -107,7 +107,7 @@ public class LazyKMP : ILazyMatcher
 
     public bool Match(string text)
     {
-        if(text.Length < pattern.Length)
+        if (text.Length < pattern.Length)
             return false;
         return this.Match((IEnumerable<char>)text);
     }
@@ -127,7 +127,7 @@ public class LazyKMP : ILazyMatcher
 
 public class ConsecutiveNumberMatcher : ILazyMatcher
 {
-    public bool AtFinalState 
+    public bool AtFinalState
     {
         get;
         private set;
@@ -140,9 +140,9 @@ public class ConsecutiveNumberMatcher : ILazyMatcher
 
     public bool Match(IEnumerable<char> text)
     {
-        foreach(char item in text)
+        foreach (char item in text)
         {
-            if(!Char.IsDigit(item))
+            if (!Char.IsDigit(item))
             {
                 return false;
             }
@@ -170,7 +170,7 @@ public class ConsecutiveNumberMatcher : ILazyMatcher
     {
         AtFinalState = false;
     }
-    
+
 }
 
 public class EndCranMatcherCreator : ICreator<ILazyMatcher>
@@ -213,7 +213,7 @@ public class EndCranMatcher : ILazyMatcher
 
     public bool Match(string text)
     {
-        if(text.Length < 4)
+        if (text.Length < 4)
         {
             return false;
         }
@@ -225,7 +225,7 @@ public class EndCranMatcher : ILazyMatcher
         indexToMatch = 0;
         state = State.firstPattern;
         AtFinalState = false;
-        foreach(char item in text)
+        foreach (char item in text)
         {
             MatchStep(item);
         }
@@ -238,7 +238,7 @@ public class EndCranMatcher : ILazyMatcher
 
     public bool PeekStep(char step)
     {
-        switch(state)
+        switch (state)
         {
             case State.firstPattern:
                 return PeekFirstPattern(step);
@@ -251,7 +251,7 @@ public class EndCranMatcher : ILazyMatcher
     }
     public bool MatchStep(char step)
     {
-        switch(state)
+        switch (state)
         {
             case State.firstPattern:
                 return MatchFirstPattern(step);
@@ -271,11 +271,11 @@ public class EndCranMatcher : ILazyMatcher
     private bool MatchFirstPattern(char step)
     {
         AtFinalState = false;
-        
-        if(firstPattern[indexToMatch] == step)
+
+        if (firstPattern[indexToMatch] == step)
         {
             indexToMatch++;
-            if(indexToMatch == firstPattern.Length)
+            if (indexToMatch == firstPattern.Length)
             {
                 state = State.secondPattern;
                 indexToMatch = 0;
@@ -297,13 +297,13 @@ public class EndCranMatcher : ILazyMatcher
     private bool MatchSecondPattern(char step)
     {
         AtFinalState = false;
-        if(Char.IsDigit(step))
+        if (Char.IsDigit(step))
         {
             return true;
         }
         else
         {
-            if(PeekThirdPattern(step))
+            if (PeekThirdPattern(step))
             {
                 state = State.thirdPattern;
                 indexToMatch = 0;
@@ -326,7 +326,7 @@ public class EndCranMatcher : ILazyMatcher
     private bool MatchThirdPattern(char step)
     {
         AtFinalState = false;
-        if(thirdPattern == step)
+        if (thirdPattern == step)
         {
             indexToMatch = 0;
             state = State.firstPattern;
@@ -358,6 +358,42 @@ public class EndCranMatcher : ILazyMatcher
     }
 }
 
+public class CranJsonDocument : IDocument, IComparable
+{
+    string doc_id;
+    string title;
+    string text;
+    DateTime modifiedDateTime;
+
+    public CranJsonDocument(string doc_id, string title, string text)
+    {
+        this.doc_id = doc_id;
+        this.title = title;
+        this.text = text;
+    }
+
+    public string Id => doc_id;
+
+    public IEnumerable<char> Name => title;
+
+    public IEnumerable<char> GetSnippet(int snippetLen) => text.Take(snippetLen);
+
+    public virtual stateDoc GetState()
+    {
+        return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(@".\contents\docs_save"))) ? stateDoc.notchanged : stateDoc.changed;
+    }
+
+    public virtual void UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(@".\contents\docs_save");
+
+    public override bool Equals(object? obj) => obj is CranJsonDocument document && modifiedDateTime == document.modifiedDateTime && Id == document.Id;
+    public override int GetHashCode() => Id.GetHashCode();
+
+    public int CompareTo(object? obj) => obj is CranJsonDocument document ? document.Id.CompareTo(Id) : throw new InvalidCastException();
+
+    public IEnumerator<char> GetEnumerator() => (title as IEnumerable<char>).Concat(text).GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
 
 public class Document : IDocument, IComparable
 {
@@ -416,10 +452,10 @@ public class Document : IDocument, IComparable
         return stateDoc.deleted;
     }
 
-    public virtual void  UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(Id);
+    public virtual void UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(Id);
 
     public virtual IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
-    
+
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
     public override bool Equals(object? obj) => obj is Document document && modifiedDateTime == document.modifiedDateTime && Id == document.Id;
@@ -443,9 +479,9 @@ public class CollectionSplitter : IEnumerable<IDocument>
 
     ICreator<ILazyMatcher> matcherCreator;
 
-    Func<IEnumerable<char>,ParsedInfo> parser;
+    Func<IEnumerable<char>, ParsedInfo> parser;
 
-    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser)
+    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>, ParsedInfo> parser)
     {
         Path = collectionPath;
         this.matcherCreator = matcherCreator;
@@ -457,9 +493,9 @@ public class CollectionSplitter : IEnumerable<IDocument>
         EmbebedDoc previousDoc = null;
         EmbebedDoc current = null;
         int index = 0;
-        while(previousDoc == null || !previousDoc.IsFinal)
+        while (previousDoc == null || !previousDoc.IsFinal)
         {
-            current = new EmbebedDoc(Path,index,matcherCreator,parser);
+            current = new EmbebedDoc(Path, index, matcherCreator, parser);
             current.Server = previousDoc;
             yield return current;
             previousDoc = current;
@@ -474,7 +510,7 @@ public class EmbebedDoc : Document
 {
     class EmbebedDocEnumerator : IEnumerator<char>
     {
-        public char Current 
+        public char Current
         {
             get;
             private set;
@@ -502,12 +538,12 @@ public class EmbebedDoc : Document
 
         public void Dispose()
         {
-            if(!disposed)
+            if (!disposed)
             {
                 //No se pasa en el caso de terminado pq se usume que se pasó en el moveNext que se llegó al final
-                if(!finished)
+                if (!finished)
                 {
-                    father.RecieveNOTFinishedReader(stream,matcher.CloneParsing());
+                    father.RecieveNOTFinishedReader(stream, matcher.CloneParsing());
                 }
                 matcher = null;
                 stream = null;
@@ -524,16 +560,16 @@ public class EmbebedDoc : Document
 
         public bool MoveNext()
         {
-            if(!disposed)
+            if (!disposed)
             {
-                if(isFirstMoveNext)
+                if (isFirstMoveNext)
                 {
                     stream = father.GetStreamReaderAtInitPos();
                     isFirstMoveNext = false;
                     finished = false;
                 }
                 int item = stream.ReadByte();
-                if(item == -1)
+                if (item == -1)
                 {
                     father.LastPos = stream.Position;
                     stream.Dispose();
@@ -544,7 +580,7 @@ public class EmbebedDoc : Document
                     return false;
                 }
                 matcher.MatchStep((char)item);
-                if(matcher.AtFinalState)
+                if (matcher.AtFinalState)
                 {
                     father.RecieveFinishedReader(stream);
                     isFirstMoveNext = true;
@@ -563,11 +599,11 @@ public class EmbebedDoc : Document
 
         public void Reset()
         {
-            if(!disposed)
+            if (!disposed)
             {
-                if(!finished)
+                if (!finished)
                 {
-                    father.RecieveNOTFinishedReader(stream,matcher.CloneParsing());
+                    father.RecieveNOTFinishedReader(stream, matcher.CloneParsing());
                 }
                 stream = null;
                 isFirstMoveNext = true;
@@ -581,7 +617,7 @@ public class EmbebedDoc : Document
 
     }
 
-    public override string Id 
+    public override string Id
     {
         get
         {
@@ -608,24 +644,24 @@ public class EmbebedDoc : Document
         }
     }
 
-    Queue<(Stream,ILazyMatcher)> NotFinishedReader = new Queue<(Stream, ILazyMatcher)>();
+    Queue<(Stream, ILazyMatcher)> NotFinishedReader = new Queue<(Stream, ILazyMatcher)>();
 
     Queue<Stream> FinishedReader = new Queue<Stream>();
 
     readonly ICreator<ILazyMatcher> matcherCreator;
 
-    readonly Func<IEnumerable<char>,ParsedInfo> parser;
-    
+    readonly Func<IEnumerable<char>, ParsedInfo> parser;
+
     ParsedInfo info;
 
     public bool IsFinal
     {
         get
         {
-            if(LastPos == -1)
+            if (LastPos == -1)
             {
                 var temp = GetStreamForNextDoc();//Intentar mover el stream al final
-                if(!isFinal)
+                if (!isFinal)
                     FinishedReader.Enqueue(temp);
                 return isFinal;
             }
@@ -658,9 +694,9 @@ public class EmbebedDoc : Document
 
     string id;
 
-    public EmbebedDoc(string collectionPath,int index, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>,ParsedInfo> parser, int initPos = -1, int lastPos = -1) :base(collectionPath,parser)
+    public EmbebedDoc(string collectionPath, int index, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>, ParsedInfo> parser, int initPos = -1, int lastPos = -1) : base(collectionPath, parser)
     {
-        
+
         this.path = collectionPath;
         this.id = path + "\\" + index;
         this.matcherCreator = matcherCreator;
@@ -677,39 +713,39 @@ public class EmbebedDoc : Document
     public Stream GetStreamForNextDoc()
     {
 
-        if(isFinal)
+        if (isFinal)
         {
             return null;
         }
-        if(FinishedReader.Count > 0)
+        if (FinishedReader.Count > 0)
         {
             return FinishedReader.Dequeue();
         }
         else
         {
-            if(NotFinishedReader.Count > 0)
+            if (NotFinishedReader.Count > 0)
             {
                 var tuple = NotFinishedReader.Dequeue();
                 var sr = tuple.Item1;
                 var matcher = tuple.Item2;
-                PrivateMoveToEnd(sr,matcher);
+                PrivateMoveToEnd(sr, matcher);
                 return sr;
             }
             else
             {
-                if(Server != null)
+                if (Server != null)
                 {
                     var sr = Server.GetStreamForNextDoc();
-                    if(sr == null)
+                    if (sr == null)
                         throw new Exception("this document is beyond the final of the collection");
-                    PrivateMoveToEnd(sr,matcherCreator.Create());
+                    PrivateMoveToEnd(sr, matcherCreator.Create());
                     return sr;
                 }
                 else
                 {
-                    var fr = File.Open(path,FileMode.Open);
+                    var fr = File.Open(path, FileMode.Open);
                     var sr = new BufferedStream(fr);
-                    PrivateMoveToEnd(sr,matcherCreator.Create());
+                    PrivateMoveToEnd(sr, matcherCreator.Create());
                     return sr;
                 }
             }
@@ -719,18 +755,18 @@ public class EmbebedDoc : Document
 
     private void PrivateMoveToEnd(Stream sr, ILazyMatcher matcher)
     {
-        if(LastPos != -1)
+        if (LastPos != -1)
         {
-            sr.Seek(LastPos,SeekOrigin.Begin);
+            sr.Seek(LastPos, SeekOrigin.Begin);
         }
         else
         {
-            MoveToEnd(sr,matcher);
-            if(!IsFinal)
+            MoveToEnd(sr, matcher);
+            if (!IsFinal)
             {
-                LastPos =  sr.Position;
+                LastPos = sr.Position;
             }
-            
+
         }
     }
 
@@ -742,29 +778,29 @@ public class EmbebedDoc : Document
 
     private void RecieveNOTFinishedReader(Stream reader, ILazyMatcher matcherClon)
     {
-        NotFinishedReader.Enqueue((reader,matcherClon));
+        NotFinishedReader.Enqueue((reader, matcherClon));
     }
 
     public static void MoveToEnd(Stream reader, ILazyMatcher matcherClon)
     {
-        foreach(char item in Utils.Utils.StreamToEnumerable(reader))
+        foreach (char item in Utils.Utils.StreamToEnumerable(reader))
         {
             matcherClon.MatchStep(item);
-            if(matcherClon.AtFinalState)
+            if (matcherClon.AtFinalState)
                 break;
         }
     }
 
     public override IEnumerator<char> GetEnumerator()
-    {   
+    {
         return new EmbebedDocEnumerator(this, matcherCreator.Create());
     }
 
     Stream GetStreamReaderAtInitPos()
     {
-        if(Server == null)
+        if (Server == null)
         {
-            var fr = File.Open(path,FileMode.Open);
+            var fr = File.Open(path, FileMode.Open);
             return new BufferedStream(fr);
         }
         else
@@ -820,18 +856,18 @@ public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
 
     void CompFrecs()
     {
-        Utils.Porter2 porter_stem =  new Utils.Porter2();   
+        Utils.Porter2 porter_stem = new Utils.Porter2();
         frecs = new Dictionary<string, int>();
 
 
         foreach (string item in Utils.Utils.GetTerms(Result))
-        {   
+        {
             string item1 = item.ToLower();
             if (!Utils.Utils.GetStopWords().Contains(item1))
             {
                 item1 = porter_stem.stem(item1);
                 int val;
-                
+
                 if (frecs.TryGetValue(item1, out val))
                 {
                     frecs[item1] = val + 1;

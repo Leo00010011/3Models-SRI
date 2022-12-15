@@ -107,6 +107,7 @@ public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<stri
         foreach (var item in query)
         {
             queryscore += Math.Pow(item.Value.Weight, 2);
+            if(!((VSMStorageTD)Storage!).ContainsKey(item.Key)) continue;
             foreach (var item1 in ((VSMStorageTD)Storage!)[item.Key])
             {
                 var index = ((VSMStorageTD)Storage!).DocsFrecModal[item1.Key].Item1;
