@@ -82,7 +82,7 @@
             {
                 <li>
                     <div class="item">
-                        <a class="title" href=@Concat(item.value.Title,item.index)  target="_blank">@item.value.Title</a>
+                        <a class="title" href=@Concat(@item.index)  target="_blank">@item.value.Title</a>
                         <p>... @item.value.Snippet ...</p>
                     </div>
                 </li>
@@ -91,7 +91,7 @@
     }
 }
 
-<a href=@Concat(@l,15) target="_blank">click me</a>
+
 
 @code {
     private string query = "";
@@ -102,8 +102,6 @@
     private IEnumerable<string> ? directories;
     private bool add_corpus_path=true;
 
-    private string l ="lola";
-    private int x = 15;
     private bool vectorial = true;
     private bool boolean;
     private bool generalized_vectorial;
@@ -115,9 +113,9 @@
     private IEnumerable<IDocument> docs = new LinkedList<IDocument>();
     private bool Load = false;
 
-    private string Concat(string name,int id)
+    private string Concat(int id)
     {
-        return $"/Reader/Text/{name}/{id}";
+        return $"/Reader/Text/{id}";
     }
     private void LoadCollections()
     {
@@ -129,7 +127,7 @@
                 temp = false;
                 string temp_path = @"D:\Studio\SRI\3Models-SRI\contents"+corpus_path[i];
                 directories = Utils.ReadAllFiles(temp_path);
-                @* switch (i)
+                switch (i)
                 {
                     case 0:
                     {
@@ -157,7 +155,7 @@
                         }
                         break;
                     }
-                } *@
+                }
                
             }
         }
@@ -168,7 +166,7 @@
             Load = true;
             vectorialModel = new VSMTermDoc(docs);
             booleanModel = new BSMTermDoc(docs); 
-            generalizedModel = new GVSMTermDoc(docs); 
+            @* generalizedModel = new GVSMTermDoc(docs);  *@
         }
         Load = false;
 
@@ -245,7 +243,7 @@
            
             }
             else result= null;
-
+            Date.results = result;
         }
 
     }

@@ -192,10 +192,11 @@ cloc.Stop();
 
 Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
-// foreach (var item in results.Select(x => x.Title))
-// {
-//     System.Console.WriteLine(SearchItem.Convert(item));
-// }
+foreach (var item in results)
+{
+    System.Console.WriteLine(item.Snippet);
+    System.Console.WriteLine(item.GetText());
+}
 
 char ReadTest(IEnumerable<IDocument> docs)
 {

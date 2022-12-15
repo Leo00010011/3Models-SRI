@@ -445,6 +445,8 @@ public class Document : IDocument, IComparable
         StreamReader reader = new StreamReader(path);
         foreach (var item in GetChars(reader))
             yield return item;
+        reader.BaseStream.Close();
+        reader.Dispose();
         reader.Close();
     }
 
@@ -455,6 +457,8 @@ public class Document : IDocument, IComparable
         int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
         foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
             yield return item;
+        reader.BaseStream.Close();
+        reader.Dispose();
         reader.Close();
     }
 
