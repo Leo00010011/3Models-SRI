@@ -113,7 +113,7 @@ namespace Test;
             }
             else
             {
-                System.Console.WriteLine(list[index].GetDocText().Item2);
+                System.Console.WriteLine(list[index].GetDocText());
             }
         }
 

@@ -22,7 +22,7 @@ public interface IDocument : IEnumerable<char>
 
     IEnumerable<char> GetSnippet(int snippetLen);
 
-    (string,string) GetDocText();
+    string GetDocText();
 }
 
 public interface IResult<TValue, KKey, MPiece> : IEnumerable<(KKey, MPiece)>

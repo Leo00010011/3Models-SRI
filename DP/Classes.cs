@@ -442,15 +442,14 @@ public class Document : IDocument, IComparable
         return obj is Document document ? document.path.CompareTo(path) : throw new InvalidCastException();
     }
 
-    public virtual (string, string) GetDocText()
+    public virtual string GetDocText()
     {
         string result;
-        string name = String.Concat(Name);
         using(StreamReader sr = new StreamReader(File.Open(path,FileMode.Open)))
         {
             result = sr.ReadToEnd();
         }
-        return (name,result);
+        return result;
     }
 }
 
@@ -755,9 +754,8 @@ public class EmbebedDocument : Document
             localStream.UnderlyingStream.Position = prevPos;
         }
     }
-    public override (string,string) GetDocText()
+    public override string GetDocText()
     {
-        string name = String.Concat(Name);
         string result;
         var streamInfo = GetLocalStream();
         BufferedStream localStream = streamInfo.Item1;
@@ -767,7 +765,7 @@ public class EmbebedDocument : Document
         localStream.Read(arr,0,(int)length);
         result = String.Concat(arr.Select((c,index) => (char)c));
         DevolverStream(localStream,openedHere,prevPos);
-        return (name,result);
+        return result;
 
     }
     public override  IEnumerator<char> GetEnumerator()
