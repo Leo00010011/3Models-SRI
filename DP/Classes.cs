@@ -433,13 +433,13 @@ public class Document : IDocument, IComparable
     
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-    public override bool Equals(object? obj) => obj is Document document && modifiedDateTime == document.modifiedDateTime && path == document.path;
+    public override bool Equals(object? obj) => obj is Document document && modifiedDateTime == document.modifiedDateTime && Id == document.Id;
 
-    public override int GetHashCode() => path.GetHashCode();
+    public override int GetHashCode() => Id.GetHashCode();
 
     public int CompareTo(object? obj)
     {
-        return obj is Document document ? document.path.CompareTo(path) : throw new InvalidCastException();
+        return obj is Document document ? document.Id.CompareTo(Id) : throw new InvalidCastException();
     }
 
     public virtual (string, string) GetDocText()
@@ -539,7 +539,10 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
     public IEnumerator<IDocument> GetEnumerator()
     {
         if(Disposed)
-            throw new ObjectDisposedException("LLamaron Dispose() en este CollectionSplitter");
+        {
+            stream = new BufferedStream(File.Open(collectionPath, FileMode.Open));
+            Disposed = false;
+        }  
         if(!streamUsed)
         {
             streamUsed = true;

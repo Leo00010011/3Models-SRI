@@ -9,14 +9,14 @@ using System.Text.RegularExpressions;
 using System.Collections;
 
 
-namespace Test;
+// namespace Test;
 // public static class TestingMethods
 // {
 
 // }
 
- public class Program
- {
+// public class Program
+// {
 //     public static void Print(IEnumerable<char> text)
 //     {
 //         foreach (char c in text)
@@ -47,8 +47,8 @@ namespace Test;
 //         }
 //     }
 
-    public static void Main(string[] args)
-    {
+    //public static void Main(string[] args)
+    //{
         // Stopwatch cloc = new Stopwatch();
         // IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
 
@@ -87,41 +87,7 @@ namespace Test;
         // {
         //     System.Console.WriteLine(SearchItem.Convert(item));
         // }
-        var temp = new CollectionSplitter(@"C:\Users\Leo pc\Desktop\SRI\Test Collections\Reuters\reut2-000.sgm",new EndReutersMatcherCreator(),Utils.Parser.ReutersParser);
-        //
-        List<IDocument> list = new List<IDocument>();
-        
-        foreach(var doc in temp)
-        {
-            int Length = 0;
-            list.Add(doc);
-            foreach(char item in doc)
-            {
-                Length++;
-            }
-        }
-        temp.Dispose();
-        System.Console.WriteLine("Final de los textos " + list.Count);
-        Console.ReadLine();
-       
-        while(true)
-        {
-            int index = int.Parse(Console.ReadLine());
-            if(index == -1)
-            {
-                break;
-            }
-            else
-            {
-                System.Console.WriteLine(list[index].GetDocText().Item2);
-            }
-        }
-
-
-        
-
-        
-    }
+    //}
 
 //     private static char ReadTest(IEnumerable<IDocument> docs)
 //     {
@@ -135,7 +101,7 @@ namespace Test;
 //         }
 //         return a;
 //     }
-}
+// }
 
 
 // string s ="From: hgomez@magnus.acs.ohio-state.edu (Humberto L Gomez)\nsubject: MULTISYNC 3D NEC MONITOR FOR SALE\n\n\nI have an NEC multisync 3d monitor for sale. great condition. looks new. it is\n.28 dot pitch\nSVGA monitor that syncs from 15-38khz\n\nit is compatible with all aga amiga graphics modes.\nleave message if interested. make an offer.\n-- ";
@@ -185,63 +151,64 @@ namespace Test;
 //     System.Console.WriteLine($"{SearchItem.Convert(item.Title)} => {item.Score}");
 // }
 
-// Stopwatch cloc = new Stopwatch();
-// IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20news-18828");
 
-// LinkedList<IDocument> docs1 = new LinkedList<IDocument>();
-// foreach (var item in docsID)
-// {
-//     docs1.AddLast(new Document(item, Parser.NewsgroupParser));
-// }
+Stopwatch cloc = new Stopwatch();
+IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20news");
 
-// IEnumerable<IDocument> docs = docs1.Concat(new CollectionSplitter(@"D:\Studio\SRI\3Models-SRI\contents\Cran\cran.all.1400", new EndCranMatcherCreator(), Parser.CranParser));
+LinkedList<IDocument> docs1 = new LinkedList<IDocument>();
+foreach (var item in docsID)
+{
+    docs1.AddLast(new Document(item, Parser.NewsgroupParser));
+}
 
-// docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\Reuters");
+IEnumerable<IDocument> docs = docs1.Concat(new CollectionSplitter(@"D:\Studio\SRI\3Models-SRI\contents\Cran\cran.all.1400", new EndCranMatcherCreator(), Parser.CranParser));
 
-// foreach (var item in docsID)
-// {
-//     docs = docs.Concat(new CollectionSplitter(item, new EndReutersMatcherCreator(), Parser.ReutersParser));
-// }
+docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\Reuters");
 
-// cloc.Start();
-// ReadTest(docs1);
-// cloc.Stop();
+foreach (var item in docsID)
+{
+    docs = docs.Concat(new CollectionSplitter(item, new EndReutersMatcherCreator(), Parser.ReutersParser));
+}
 
-// Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
-// cloc.Reset();
+cloc.Start();
+ReadTest(docs);
+cloc.Stop();
 
-// cloc.Start();
-// GVSMTermDoc vectorial = new GVSMTermDoc(docs1);
-// cloc.Stop();
+Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
+cloc.Reset();
 
-// Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
-// cloc.Reset();
+cloc.Start();
+VSMDocTerm vectorial = new VSMDocTerm(docs);
+cloc.Stop();
 
-// cloc.Start();
-// SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
-// cloc.Stop();
+Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
+cloc.Reset();
 
-// Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+cloc.Start();
+SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
+cloc.Stop();
+
+Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
 // foreach (var item in results.Select(x => x.Title))
 // {
 //     System.Console.WriteLine(SearchItem.Convert(item));
 // }
 
-//char ReadTest(IEnumerable<IDocument> docs)
-//{
-//    char a = '0';
-//    foreach (var doc in docs)
-//    {
-//        foreach (var item in doc)
-//        {
-//            a = item;
-//        }
-//    }
-//    return a;
-//}
-//
-//System.Console.ReadKey();
+char ReadTest(IEnumerable<IDocument> docs)
+{
+    char a = '0';
+    foreach (var doc in docs)
+    {
+        foreach (var item in doc)
+        {
+            a = item;
+        }
+    }
+    return a;
+}
+
+System.Console.ReadKey();
 // x[0]= true;
 // x[1]= true;
 

@@ -67,6 +67,7 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
         if (terms is null) return;
 
         MatrixStorage.Add(item, terms);
+        
         DocsFrecModal.Add(item, ModalFrec);
     }
 
