@@ -393,6 +393,8 @@ public class CranJsonDocument : IDocument, IComparable
     public IEnumerator<char> GetEnumerator() => (title as IEnumerable<char>).Concat(text).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public string GetDocText() => text;
 }
 
 public class Document : IDocument, IComparable
