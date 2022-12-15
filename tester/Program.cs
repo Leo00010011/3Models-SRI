@@ -1,13 +1,11 @@
-﻿using System;
-using System.Diagnostics;
-using DP;
+﻿using DP;
 using DP.Interface;
+using System.Text.Json;
 using SRI;
-using SRI.Interface;
 using Utils;
-using System.Text.RegularExpressions;
-using System.Collections;
 
+var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
+var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
 
 // namespace Test;
 // public static class TestingMethods
@@ -103,6 +101,9 @@ using System.Collections;
 //     }
 // }
 
+var file = File.CreateText(@".\qrels_save");
+file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
+file.Close();
 
 // string s ="From: hgomez@magnus.acs.ohio-state.edu (Humberto L Gomez)\nsubject: MULTISYNC 3D NEC MONITOR FOR SALE\n\n\nI have an NEC multisync 3d monitor for sale. great condition. looks new. it is\n.28 dot pitch\nSVGA monitor that syncs from 15-38khz\n\nit is compatible with all aga amiga graphics modes.\nleave message if interested. make an offer.\n-- ";
 // ParsedInfo a = Parser.NewsgroupParser(s);
@@ -212,17 +213,9 @@ System.Console.ReadKey();
 // x[0]= true;
 // x[1]= true;
 
-// string corpus_path = "C:\\Users\\User\\Desktop\\Test Collections\\Test Collections\\20 Newsgroups\\20news-18828\\talk.religion.misc";
-// IEnumerable<string> directories = Utils.Utils.ReadAllFiles(corpus_path);
-// LinkedList<IDocument> docs = new LinkedList<IDocument>();
-// foreach (var item in directories)
-// {
-//    docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
-// }
-// BSMTermDoc booleanModel = new BSMTermDoc(docs); 
-// ISearchResult result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(query,300)),""); 
-       
-// foreach (var item in result)
-// {
-//     System.Console.WriteLine($"{SearchItem.Convert(item.Title)} => {item.Score}");
-// }
+    public Query(string query_id, string text)
+    {
+        this.query_id = query_id;
+        this.text = text;
+    }
+}
