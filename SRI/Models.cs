@@ -64,7 +64,7 @@ public abstract class WModel<T1, T2, D> : SRIModel<T1, T2, IWeight, string, D>, 
 
 public abstract class WMDocTerm : WModel<IDocument, string, IDocument>, ISRIModel<IDocument, string, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public WMDocTerm(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageDT(corpus);
+    public WMDocTerm(ICollection<IDocument> corpus) => Storage = new VSMStorageDT(corpus);
 
     public override SearchItem[] GetSearchItems(IDictionary<string, IWeight> query, int snippetLen)
     {
@@ -77,7 +77,7 @@ public abstract class WMDocTerm : WModel<IDocument, string, IDocument>, ISRIMode
 
 public class VSMDocTerm : WMDocTerm, ISRIModel<IDocument, string, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public VSMDocTerm(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
+    public VSMDocTerm(ICollection<IDocument> corpus) : base(corpus) { }
 
     public IDictionary<string, IWeight> CreateQuery(IEnumerable<char> docs)
     {
@@ -95,7 +95,7 @@ public class VSMDocTerm : WMDocTerm, ISRIModel<IDocument, string, IWeight, strin
 
 public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public WMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new VSMStorageTD(corpus);
+    public WMTermDoc(ICollection<IDocument> corpus) => Storage = new VSMStorageTD(corpus);
 
     public override SearchItem[] GetSearchItems(IDictionary<string, IWeight> query, int snippetLen)
     {
@@ -125,7 +125,7 @@ public abstract class WMTermDoc : WModel<string, int, IDocument>, ISRIModel<stri
 
 public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public VSMTermDoc(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
+    public VSMTermDoc(ICollection<IDocument> corpus) : base(corpus) { }
 
     public IDictionary<string, IWeight> CreateQuery(IEnumerable<char> docs)
     {
@@ -142,7 +142,7 @@ public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDo
 
 public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public GVSMTermDoc(IEnumerable<IDocument>? corpus = null) => Storage = new GVSMStorageDT(corpus);
+    public GVSMTermDoc(ICollection<IDocument> corpus) : base(corpus) => Storage = new GVSMStorageDT(corpus);
 
     public SearchItem[] GetSearchItems(double[] query, int snippetLen)
     {
@@ -194,7 +194,7 @@ public class BSMTermDoc : WMTermDoc, ISRIModel<string, string, string, int, IDoc
 {
     private static BooleanNode root;
 
-    public BSMTermDoc(IEnumerable<IDocument>? corpus = null) : base(corpus) { }
+    public BSMTermDoc(ICollection<IDocument> corpus) : base(corpus) { }
     private static void create_query_ast(List<TokenLexem> tokenized)
     {
         BSMTermDoc.root = null;

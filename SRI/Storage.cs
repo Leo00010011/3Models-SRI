@@ -13,9 +13,11 @@ using System.Runtime.InteropServices;
 
 public abstract class Storage<T1, T2, V, D> : IStorage<T1, T2, V, D>, ICollection<D> where T1 : notnull where T2 : notnull
 {
+    protected Storage(ICollection<D> corpus) => this.corpus = corpus;
+
     protected abstract IDictionary<T1, IDictionary<T2, V>> MatrixStorage { get; set; }
     public virtual IDictionary<T2, V> this[T1 index] => MatrixStorage[index];
-    public abstract IEnumerable<D> corpus { get; }
+    public virtual ICollection<D> corpus { get; }
 
     public abstract int Count { get; }
     public virtual bool IsReadOnly => MatrixStorage.IsReadOnly;
@@ -40,19 +42,18 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
     protected Dictionary<string, (int, int)> InvFrecTerms;
     protected bool needUpdate;
 
-    public VSMStorageDT(IEnumerable<IDocument>? corpus)
+    public VSMStorageDT(ICollection<IDocument> corpus) : base(corpus)
     {
         MatrixStorage = new Dictionary<IDocument, IDictionary<string, IWeight>>();
         DocsFrecModal = new Dictionary<IDocument, int>();
         InvFrecTerms = new Dictionary<string, (int, int)>();
-        if (corpus is null) return;
 
         foreach (var item in corpus)
             this.Add(item);
         UpdateDocs();
     }
 
-    public override IEnumerable<IDocument> corpus => DocsFrecModal.Keys;
+    public override ICollection<IDocument> corpus => DocsFrecModal.Keys;
 
     public override int Count => DocsFrecModal.Count;
 
@@ -176,11 +177,10 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
     public Dictionary<IDocument, (int, double)> DocsFrecModal;
     protected bool needUpdate;
 
-    public VSMStorageTD(IEnumerable<IDocument>? corpus)
+    public VSMStorageTD(ICollection<IDocument> corpus) : base(corpus)
     {
         MatrixStorage = new Dictionary<string, IDictionary<IDocument, IWeight>>();
         DocsFrecModal = new Dictionary<IDocument, (int, double)>();
-        if (corpus is null) return;
 
         foreach (var item in corpus)
             this.Add(item);
@@ -188,7 +188,6 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
     }
 
     protected override IDictionary<string, IDictionary<IDocument, IWeight>> MatrixStorage { get; set; }
-    public override IEnumerable<IDocument> corpus => DocsFrecModal.Select(x => x.Key);
 
     public override int Count => DocsFrecModal.Count;
 
@@ -306,13 +305,11 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
     private Dictionary<string, IDictionary<int, double>> weightTerms;
     private MinTerm<int>[]? docspattern;
 
-    public GVSMStorageDT(IEnumerable<IDocument>? corpus) : base(null)
+    public GVSMStorageDT(ICollection<IDocument> corpus) : base(corpus)
     {
         weightTerms = new Dictionary<string, IDictionary<int, double>>();
         docs = new Dictionary<IDocument, int>();
         actualIndex = -1;
-
-        if (corpus is null) return;
 
         foreach (var item in corpus.Select((doc, index) => (index, doc)))
         {
