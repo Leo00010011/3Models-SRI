@@ -502,13 +502,13 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
 
     class CollectionSplitterEnumerator : IEnumerator<IDocument>
     {
-        public IDocument Current => current;
+        public IDocument Current => current.Value;
 
         int index = 1;
 
         bool disposed = false;
 
-        public EmbebedDocument current = null;
+        LinkedListNode<EmbebedDocument> current = null;
 
         object IEnumerator.Current => this.Current;
         
@@ -528,20 +528,39 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
             disposed = true;
         }
 
+
+
         public bool MoveNext()
         {
             if(disposed)
                 return false;
-
-            if(current == null || (!current.EndOfFileReached && Utils.Utils.Peek(enumerable.stream) != -1 && current.EndReached))
+            
+            if(!current.Value.EndOfFileReached && Utils.Utils.Peek(enumerable.stream) != -1 && current.Value.EndReached)
             {
-                current = new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable);
+
+                if(index <= enumerable.createdDoc.Count)
+                {
+                    if(current == null)
+                    {
+                        current = enumerable.createdDoc.First;
+                    }
+                    else
+                    {
+                        current = current.Next;
+                    }
+                    current.Value.Reset();
+                }
+                else
+                {
+                    current = new LinkedListNode<EmbebedDocument>(new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable));
+                    enumerable.createdDoc.AddLast(current);
+                }
                 index++;
                 return true;
             }
             else
             {
-                if(!current.EndReached)
+                if(!current.Value.EndReached)
                     throw new Exception("Tienes que leer el documento anterior hasta el final");
                 //Solo se llega aquí si current.EndOfFileReached es true
                 Dispose();
@@ -569,6 +588,8 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
     Func<IEnumerable<char>, ParsedInfo> parser;
 
     ICreator<ILazyMatcher> endMatcherCreator;
+
+    LinkedList<EmbebedDocument> createdDoc = new LinkedList<EmbebedDocument>();
 
     BufferedStream stream;
     public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> endMatcherCreator, Func<IEnumerable<char>, ParsedInfo> parser)
@@ -674,6 +695,7 @@ public class EmbebedDocument : Document
 
         public void Dispose()
         {
+            enumerable.enumeratorSended = false;
             enumerable = null;
             matcher = null;
         }
@@ -786,6 +808,11 @@ public class EmbebedDocument : Document
         localStream.Seek(initPos,SeekOrigin.Begin);
 
         return (localStream,openedHere,prevPos);
+    }
+
+    public void Reset()
+    {
+        EndReached = false;
     }
 
     void DevolverStream(BufferedStream localStream, bool openedHere, long prevPos)
