@@ -1,4 +1,6 @@
-﻿namespace Utils;
+﻿using System.Collections;
+
+namespace Utils;
 
 public static class Utils
 {
@@ -35,7 +37,25 @@ public static class Utils
     {
         while (!(sr.Position == sr.Length))
             yield return (char)sr.ReadByte();
-        sr.Dispose();
+    }
+
+    public static IEnumerable<T> DisposeAtEnd<K,T>(K iter) where K : IEnumerable<T>,IDisposable
+    {
+        foreach(var item in  iter)
+        {
+            yield return item;
+        }
+        iter.Dispose();
+    }
+
+    public static int Peek(BufferedStream sr)
+    {
+        long prevPos = sr.UnderlyingStream.Position;
+        var fd = sr.UnderlyingStream;
+        fd.Position = sr.Position;
+        int result = fd.ReadByte();
+        fd.Position = prevPos;
+        return result;
     }
 
     public static IEnumerable<string> ReadAllFiles(string path)

@@ -397,30 +397,41 @@ public class CranJsonDocument : IDocument, IComparable
 
 public class Document : IDocument, IComparable
 {
-    private ParsedInfo? info;
-    private DateTime modifiedDateTime;
-    private Func<IEnumerable<char>, ParsedInfo> parser;
-
-    public Document(string id, Func<IEnumerable<char>, ParsedInfo> parser)
-    {
-        Id = id;
-        modifiedDateTime = default(DateTime);
-        this.parser = parser;
-    }
-
-    public virtual string Id { get; private set; }
-
     public virtual IEnumerable<char> Name
     {
         get
         {
             if (info is null) info = parser(this);
-            StreamReader reader = new StreamReader(Id);
+            StreamReader reader = new StreamReader(path);
             foreach (var item in GetChars(reader).Skip(info.TitleInit).Take(info.TitleLen))
                 yield return item;
             reader.Close();
         }
     }
+
+    public virtual string Id
+    {
+        get;
+        protected set;
+    }
+
+    protected string path;
+    private ParsedInfo? info;
+    private DateTime modifiedDateTime;
+    private Func<IEnumerable<char>, ParsedInfo> parser;
+
+    
+
+    public Document(string id, Func<IEnumerable<char>, ParsedInfo> parser)
+    {
+        Id = id;
+        path = id;
+        modifiedDateTime = default(DateTime);
+        this.parser = parser;
+    }
+
+
+  
 
     public static IEnumerable<char> GetChars(StreamReader reader)
     {
@@ -430,7 +441,7 @@ public class Document : IDocument, IComparable
 
     protected virtual IEnumerable<char> GetEnumerable()
     {
-        StreamReader reader = new StreamReader(Id);
+        StreamReader reader = new StreamReader(path);
         foreach (var item in GetChars(reader))
             yield return item;
         reader.Close();
@@ -439,7 +450,7 @@ public class Document : IDocument, IComparable
     public virtual IEnumerable<char> GetSnippet(int snippetLen)
     {
         if (info is null) info = parser(this);
-        StreamReader reader = new StreamReader(Id);
+        StreamReader reader = new StreamReader(path);
         int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
         foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
             yield return item;
@@ -448,11 +459,11 @@ public class Document : IDocument, IComparable
 
     public virtual stateDoc GetState()
     {
-        if (File.Exists(Id)) return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(Id))) ? stateDoc.notchanged : stateDoc.changed;
+        if (File.Exists(path)) return (DateTime.Equals(modifiedDateTime, File.GetLastWriteTime(path))) ? stateDoc.notchanged : stateDoc.changed;
         return stateDoc.deleted;
     }
 
-    public virtual void UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(Id);
+    public virtual void  UpdateDateTime() => modifiedDateTime = File.GetLastWriteTime(path);
 
     public virtual IEnumerator<char> GetEnumerator() => GetEnumerable().GetEnumerator();
 
@@ -466,49 +477,135 @@ public class Document : IDocument, IComparable
     {
         return obj is Document document ? document.Id.CompareTo(Id) : throw new InvalidCastException();
     }
+
+    public virtual (string, string) GetDocText()
+    {
+        string result;
+        string name = String.Concat(Name);
+        using(StreamReader sr = new StreamReader(File.Open(path,FileMode.Open)))
+        {
+            result = sr.ReadToEnd();
+        }
+        return (name,result);
+    }
 }
 
-
-public class CollectionSplitter : IEnumerable<IDocument>
+public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
 {
-    public string Path
+
+    class CollectionSplitterEnumerator : IEnumerator<IDocument>
     {
-        get;
+        public IDocument Current => current;
+
+        int index = 1;
+
+        bool disposed = false;
+
+        public EmbebedDocument current = null;
+
+        object IEnumerator.Current => this.Current;
+        
+        CollectionSplitter enumerable;
+
+        public CollectionSplitterEnumerator(CollectionSplitter enumerable)
+        {
+            this.enumerable = enumerable;
+        }
+
+        public void Dispose()
+        {
+            if(disposed)
+                return;
+            enumerable.streamUsed = false;
+            enumerable = null;
+            disposed = true;
+        }
+
+        public bool MoveNext()
+        {
+            if(disposed)
+                return false;
+
+            if(current == null || (!current.EndOfFileReached && Utils.Utils.Peek(enumerable.stream) != -1 && current.EndReached))
+            {
+                current = new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable);
+                index++;
+                return true;
+            }
+            else
+            {
+                if(!current.EndReached)
+                    throw new Exception("Tienes que leer el documento anterior hasta el final");
+                //Solo se llega aquí si current.EndOfFileReached es true
+                Dispose();
+                return false;
+            }
+        }
+
+        public void Reset()
+        {
+            throw new InvalidOperationException("No se puede resetear este enumerator");
+        }
+    }
+
+    
+    string collectionPath;
+
+    public bool Disposed
+    {
+        get; 
         private set;
     }
 
-    ICreator<ILazyMatcher> matcherCreator;
+    bool streamUsed = false;
 
     Func<IEnumerable<char>, ParsedInfo> parser;
 
-    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>, ParsedInfo> parser)
+    ICreator<ILazyMatcher> endMatcherCreator;
+
+    BufferedStream stream;
+    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> endMatcherCreator, Func<IEnumerable<char>, ParsedInfo> parser)
     {
-        Path = collectionPath;
-        this.matcherCreator = matcherCreator;
+        this.collectionPath = collectionPath;
+        this.endMatcherCreator = endMatcherCreator;
         this.parser = parser;
+        stream = new BufferedStream(File.Open(collectionPath,FileMode.Open));
     }
 
     public IEnumerator<IDocument> GetEnumerator()
     {
-        EmbebedDoc previousDoc = null;
-        EmbebedDoc current = null;
-        int index = 0;
-        while (previousDoc == null || !previousDoc.IsFinal)
+        if(Disposed)
         {
-            current = new EmbebedDoc(Path, index, matcherCreator, parser);
-            current.Server = previousDoc;
-            yield return current;
-            previousDoc = current;
-            index++;
+            stream = new BufferedStream(File.Open(collectionPath, FileMode.Open));
+            Disposed = false;
+        }  
+        if(!streamUsed)
+        {
+            streamUsed = true;
+            stream.Seek(0,SeekOrigin.Begin);
+            return new CollectionSplitterEnumerator(this);
         }
+        else
+            throw new InvalidOperationException("Otro enumerator está usando este stream");
     }
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+    public void Dispose()
+    {
+        if(!Disposed)
+        {
+            stream.Dispose();
+            streamUsed = false;
+            stream = null;
+            Disposed = true;
+        }
+    }
 }
 
-public class EmbebedDoc : Document
+public class EmbebedDocument : Document
 {
-    class EmbebedDocEnumerator : IEnumerator<char>
+    class EmbebedDocumentEnumerator : IEnumerator<char>
     {
         public char Current
         {
@@ -516,314 +613,211 @@ public class EmbebedDoc : Document
             private set;
         }
 
-        object IEnumerator.Current => this.Current;
+        object IEnumerator.Current => Current;
 
-        bool finished = false;
+        bool lastReached = false;
 
-        bool isFirstMoveNext = true;
+        long count = 0;
 
-        Stream stream;
+        EmbebedDocument enumerable;
+
+        ParsedInfo info = null;
 
         ILazyMatcher matcher;
 
-        EmbebedDoc father;
-
-        bool disposed = false;
-
-        public EmbebedDocEnumerator(EmbebedDoc father, ILazyMatcher matcher)
+        public EmbebedDocumentEnumerator(EmbebedDocument enumerable)
         {
-            this.father = father;
-            this.matcher = matcher;
-        }
-
-        public void Dispose()
-        {
-            if (!disposed)
-            {
-                //No se pasa en el caso de terminado pq se usume que se pasó en el moveNext que se llegó al final
-                if (!finished)
-                {
-                    father.RecieveNOTFinishedReader(stream, matcher.CloneParsing());
-                }
-                matcher = null;
-                stream = null;
-                father = null;
-                disposed = true;
-                finished = false;
-                isFirstMoveNext = false;
-            }
-            else
-            {
-                throw new ObjectDisposedException("embebed document");
-            }
+            this.enumerable = enumerable;
+            matcher = enumerable.endMatcherCreator.Create();
         }
 
         public bool MoveNext()
         {
-            if (!disposed)
+            if(lastReached)
             {
-                if (isFirstMoveNext)
-                {
-                    stream = father.GetStreamReaderAtInitPos();
-                    isFirstMoveNext = false;
-                    finished = false;
-                }
-                int item = stream.ReadByte();
-                if (item == -1)
-                {
-                    father.LastPos = stream.Position;
-                    stream.Dispose();
-                    isFirstMoveNext = true;
-                    finished = true;
-                    stream = null;
-                    father.SetThisAsFinal();
-                    return false;
-                }
-                matcher.MatchStep((char)item);
-                if (matcher.AtFinalState)
-                {
-                    father.RecieveFinishedReader(stream);
-                    isFirstMoveNext = true;
-                    finished = true;
-                    stream = null;
-                    return false;
-                }
+                return false;
+            }
+                
+            int item = enumerable.stream.ReadByte();
+
+            if(item == -1)
+            {
+                enumerable.length = count;
+                enumerable.EndOfFileReached = true;
+                enumerable.EndReached = true;
+                return false;
+            }
+            Current = (char)item;
+            matcher.MatchStep(Current);
+            count++;
+            if(matcher.AtFinalState)
+            {
+                enumerable.length = count;
+                lastReached = true;
+                enumerable.EndReached = true;
                 Current = (char)item;
-                return true;
             }
-            else
-            {
-                throw new ObjectDisposedException("embebed document");
-            }
+            return true;
         }
 
         public void Reset()
         {
-            if (!disposed)
-            {
-                if (!finished)
-                {
-                    father.RecieveNOTFinishedReader(stream, matcher.CloneParsing());
-                }
-                stream = null;
-                isFirstMoveNext = true;
-                finished = false;
-            }
-            else
-            {
-                throw new ObjectDisposedException("embebed document");
-            }
+            throw new InvalidOperationException("Cannot do Reset in this enumerator");
         }
 
-    }
-
-    public override string Id
-    {
-        get
+        public void Dispose()
         {
-            return id;
+            enumerable = null;
+            matcher = null;
         }
     }
 
-    string path;
-
-
-    public override IEnumerable<char> Name
+    public override IEnumerable<char> Name// => throw new Exception();
     {
         get
         {
-            if (info is null)
-            {
-                var text = Utils.Utils.StreamToEnumerable(GetStreamReaderAtInitPos());
-                info = parser(text);
-            }
-            Stream reader = GetStreamReaderAtInitPos();
-            foreach (var item in Utils.Utils.StreamToEnumerable(reader).Skip(info.TitleInit).Take(info.TitleLen))
+            var streamInfo = GetLocalStream();
+            BufferedStream localStream = streamInfo.Item1;
+            bool openedHere = streamInfo.Item2;
+            long prevPos = streamInfo.Item3;
+            
+            if(info == null)
+                info = parser(Utils.Utils.StreamToEnumerable(localStream));
+            localStream.Seek(initPos,SeekOrigin.Begin);
+
+            foreach (var item in Utils.Utils.StreamToEnumerable(localStream).Skip(info.TitleInit).Take(info.TitleLen))
                 yield return item;
-            reader.Close();
-        }
-    }
-
-    Queue<(Stream, ILazyMatcher)> NotFinishedReader = new Queue<(Stream, ILazyMatcher)>();
-
-    Queue<Stream> FinishedReader = new Queue<Stream>();
-
-    readonly ICreator<ILazyMatcher> matcherCreator;
-
-    readonly Func<IEnumerable<char>, ParsedInfo> parser;
-
-    ParsedInfo info;
-
-    public bool IsFinal
-    {
-        get
-        {
-            if (LastPos == -1)
-            {
-                var temp = GetStreamForNextDoc();//Intentar mover el stream al final
-                if (!isFinal)
-                    FinishedReader.Enqueue(temp);
-                return isFinal;
-            }
-            else
-            {
-                return isFinal;
-            }
-        }
-    }
-
-    bool isFinal = false;
-
-    public long InitPos
-    {
-        get;
-        private set;
-    }
-
-    public long LastPos
-    {
-        get;
-        private set;
-    }
-
-    public EmbebedDoc Server
-    {
-        get;
-        set;
-    }
-
-    string id;
-
-    public EmbebedDoc(string collectionPath, int index, ICreator<ILazyMatcher> matcherCreator, Func<IEnumerable<char>, ParsedInfo> parser, int initPos = -1, int lastPos = -1) : base(collectionPath, parser)
-    {
-
-        this.path = collectionPath;
-        this.id = path + "\\" + index;
-        this.matcherCreator = matcherCreator;
-        this.InitPos = initPos;
-        this.LastPos = lastPos;
-        this.parser = parser;
-    }
-
-    void SetThisAsFinal()
-    {
-        isFinal = true;
-    }
-
-    public Stream GetStreamForNextDoc()
-    {
-
-        if (isFinal)
-        {
-            return null;
-        }
-        if (FinishedReader.Count > 0)
-        {
-            return FinishedReader.Dequeue();
-        }
-        else
-        {
-            if (NotFinishedReader.Count > 0)
-            {
-                var tuple = NotFinishedReader.Dequeue();
-                var sr = tuple.Item1;
-                var matcher = tuple.Item2;
-                PrivateMoveToEnd(sr, matcher);
-                return sr;
-            }
-            else
-            {
-                if (Server != null)
-                {
-                    var sr = Server.GetStreamForNextDoc();
-                    if (sr == null)
-                        throw new Exception("this document is beyond the final of the collection");
-                    PrivateMoveToEnd(sr, matcherCreator.Create());
-                    return sr;
-                }
-                else
-                {
-                    var fr = File.Open(path, FileMode.Open);
-                    var sr = new BufferedStream(fr);
-                    PrivateMoveToEnd(sr, matcherCreator.Create());
-                    return sr;
-                }
-            }
-        }
-    }
-
-
-    private void PrivateMoveToEnd(Stream sr, ILazyMatcher matcher)
-    {
-        if (LastPos != -1)
-        {
-            sr.Seek(LastPos, SeekOrigin.Begin);
-        }
-        else
-        {
-            MoveToEnd(sr, matcher);
-            if (!IsFinal)
-            {
-                LastPos = sr.Position;
-            }
-
-        }
-    }
-
-    private void RecieveFinishedReader(Stream reader)
-    {
-        FinishedReader.Enqueue(reader);
-        LastPos = reader.Position;
-    }
-
-    private void RecieveNOTFinishedReader(Stream reader, ILazyMatcher matcherClon)
-    {
-        NotFinishedReader.Enqueue((reader, matcherClon));
-    }
-
-    public static void MoveToEnd(Stream reader, ILazyMatcher matcherClon)
-    {
-        foreach (char item in Utils.Utils.StreamToEnumerable(reader))
-        {
-            matcherClon.MatchStep(item);
-            if (matcherClon.AtFinalState)
-                break;
-        }
-    }
-
-    public override IEnumerator<char> GetEnumerator()
-    {
-        return new EmbebedDocEnumerator(this, matcherCreator.Create());
-    }
-
-    Stream GetStreamReaderAtInitPos()
-    {
-        if (Server == null)
-        {
-            var fr = File.Open(path, FileMode.Open);
-            return new BufferedStream(fr);
-        }
-        else
-        {
-            var stream = Server.GetStreamForNextDoc();
-            InitPos = stream.Position;
-            return stream;
+            
+            DevolverStream(localStream,openedHere,prevPos);
         }
     }
 
     public override IEnumerable<char> GetSnippet(int snippetLen)
     {
-        if (info is null)
-        {
-            var text = Utils.Utils.StreamToEnumerable(GetStreamReaderAtInitPos());
-            info = parser(text);
-        }
-        Stream reader = GetStreamReaderAtInitPos();
+        
+        var streamInfo = GetLocalStream();
+        BufferedStream localStream = streamInfo.Item1;
+        bool openedHere = streamInfo.Item2;
+        long prevPos = streamInfo.Item3;
+        
+        if(info == null)
+            info = parser(Utils.Utils.StreamToEnumerable(localStream));
+        localStream.Seek(initPos,SeekOrigin.Begin);
+        
         int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
-        foreach (var item in Utils.Utils.StreamToEnumerable(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
+        foreach (var item in Utils.Utils.StreamToEnumerable(localStream).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
             yield return item;
-        reader.Close();
+        
+        DevolverStream(localStream,openedHere,prevPos);
     }
+    
+    public bool EndReached
+    {
+        get;
+        private set;
+    }
+
+    public bool EndOfFileReached
+    {
+        get;
+        private set;
+    }
+
+    bool enumeratorSended = false;
+    
+    public long InitPos
+    {
+        get => initPos;
+    }
+
+    public long Length
+    {
+        get => length;
+    }
+
+    long initPos = -1;
+
+    long length = -1;
+
+    ParsedInfo info = null;
+
+    BufferedStream stream;
+
+    ICreator<ILazyMatcher> endMatcherCreator;
+
+    Func<IEnumerable<char>, ParsedInfo> parser;
+
+    CollectionSplitter splitter;
+
+    public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter) : base(id, parser)
+    {
+        this.splitter = splitter;
+        path = id;
+        Id = path + "\\" + index;
+        this.stream = stream;
+        this.initPos = stream.Position;
+        this.endMatcherCreator = endMatcher;
+        this.parser = parser;
+    }
+
+    (BufferedStream,bool,long) GetLocalStream()
+    {
+        bool openedHere = false;
+        BufferedStream localStream;
+        long prevPos = -1;
+        if(splitter.Disposed)
+        {
+            openedHere = true;
+            localStream = new BufferedStream(File.Open(path,FileMode.Open));
+        }
+        else
+        {
+            prevPos = stream.UnderlyingStream.Position;
+            stream.UnderlyingStream.Position = 0;
+            localStream = new BufferedStream(stream.UnderlyingStream);
+        }
+        localStream.Seek(initPos,SeekOrigin.Begin);
+
+        return (localStream,openedHere,prevPos);
+    }
+
+    void DevolverStream(BufferedStream localStream, bool openedHere, long prevPos)
+    {
+        if(openedHere)
+        {
+            localStream.Dispose();
+        }
+        else
+        {
+            localStream.Flush();
+            localStream.UnderlyingStream.Position = prevPos;
+        }
+    }
+    public override (string,string) GetDocText()
+    {
+        string name = String.Concat(Name);
+        string result;
+        var streamInfo = GetLocalStream();
+        BufferedStream localStream = streamInfo.Item1;
+        bool openedHere = streamInfo.Item2;
+        long prevPos = streamInfo.Item3;
+        byte[] arr = new byte[length];
+        localStream.Read(arr,0,(int)length);
+        result = String.Concat(arr.Select((c,index) => (char)c));
+        DevolverStream(localStream,openedHere,prevPos);
+        return (name,result);
+
+    }
+    public override  IEnumerator<char> GetEnumerator()
+    {
+        if(!enumeratorSended)
+        {
+            enumeratorSended = true;
+            return new EmbebedDocumentEnumerator(this);
+        }
+        throw new InvalidOperationException("Solo se puede pedir un enumerator");
+    }
+ 
 }
 
 

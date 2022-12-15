@@ -2,80 +2,178 @@
 
 <PageTitle>SRI</PageTitle>
 
-@if( @* corpus ==null || *@ add_corpus_path)
+@if(add_corpus_path && !Load)
 {
-    <input class="p-1 my-4" @bind="corpus_path" placeholder="Add path to load corpus">
-    <button type="default" class="btn btn-outline-secondary mx-1"  @onclick="UpdateCorpus">Accept</button>
-}
-@if(!add_corpus_path @* && corpus != null*@ )
-{
-<h1>Hi👋, Welcome!</h1>
 
-<input class="p-1 my-1" @bind="query" placeholder="Introduzca su búsqueda">
+    <h1>Select one or more Collections📚 to begin </h1>
+<div class="row justify-content-center">
 
-<button type="default" class="btn btn-primary mx-1" @onclick="RunQuery">🔍 Search</button>
-<button type="default" class="btn btn-outline-secondary"  @onclick="SetAddPath">+📚</button>
-
-<div>
-
-    <div class="form-check form-check-inline">
-      <input @onchange="SRISelector" class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="1" checked>
-      <label class="form-check-label" for="inlineRadio1">Vectorial Model</label>
-    </div>
-    
-    <div class="form-check form-check-inline">
-      <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="2" @onchange="SRISelector">
-      <label class="form-check-label" for="inlineRadio2">Boolean Model</label>
-    </div>
-   
-    <div class="form-check form-check-inline">
-      <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="3" @onchange="SRISelector" >
-      <label class="form-check-label" for="inlineRadio3">Generalized Vectorial Model</label>
-    </div>
-</div>
-
-@if (result != null) {
-   
-    @if(!string.IsNullOrEmpty(result.Suggestion)){
-    <div class="suggestion">
-        <p>Se han recuperado <strong>@result.Count</strong> documentos. ¿Quisite decir <strong><a @onclick="RunSuggestion" href="#">@result.Suggestion</a></strong>?</p>
-    </div>
-    }
-
-<ul class="results">
-@foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(15)) {
-    <li>
-     
-        <div class="item">
-            <a class="title" href=@item.URL>@SearchItem.Convert(item.Title)</a>
-            <p>... @SearchItem.Convert(item.Snippet) ...</p>
+<div class="card align-middle my-2" style="width: 18rem;">
+  <div class="card-body">
+        
+        <div class="form-check form-switch my-1">
+          <input class="form-check-input" type="checkbox" role="switch" @bind="selected_corpus_path[0]"  id="NGcol">
+          <label class="form-check-label" for="NGcol">NewsGroup Collection</label>
         </div>
-    </li>
-}
-</ul>
-}
-}
- @* @FileUpload.GetHtml(
-        initialNumberOfFiles:1,
-        allowMoreFilesToBeAdded:false,
-        includeFormTag:true,
-        uploadText:"Upload")
-     @if (IsPost) {
-        <span>File uploaded!</span><br/>
-    } *@
 
+        <div class="form-check form-switch my-1">
+          <input class="form-check-input" type="checkbox" role="switch" @bind="selected_corpus_path[1]"  id="Rcol">
+          <label class="form-check-label" for="Rcol">Reuters Collection</label>
+        </div>
+    
+        <div class="form-check form-switch my-1">
+          <input class="form-check-input" type="checkbox" role="switch" @bind="selected_corpus_path[2]"  id="Ccol">
+          <label class="form-check-label" for="Ccol">Cran Collection</label>
+        </div>
+
+    </div>
+
+        <button type="default" class="btn btn-primary mt-1" @onclick="LoadCollections">Accept</button>
+</div>
+</div>
+        
+
+
+
+}
+@if(!add_corpus_path && Load)
+{
+    <div class="spinner-border text-primary" role="status">
+      Loading <span class="visually-hidden">Loading...</span>
+    </div>
+}
+@if(!add_corpus_path && !Load)
+{
+    <h1>Hi👋, Welcome!</h1>
+
+    <input class="p-1 my-1" @bind="query" placeholder="Introduzca su búsqueda">
+
+    <button type="default" class="btn btn-primary mx-1" @onclick="RunQuery">🔍 Search</button>
+
+    <div>
+        <div class="form-check form-check-inline">
+          <input @onchange="SRISelector" class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="1" checked>
+          <label class="form-check-label" for="inlineRadio1">Vectorial Model</label>
+        </div>
+
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="2" @onchange="SRISelector">
+          <label class="form-check-label" for="inlineRadio2">Boolean Model</label>
+        </div>
+    
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="3" @onchange="SRISelector" >
+          <label class="form-check-label" for="inlineRadio3">General Vectorial Model</label>
+        </div>
+    </div>
+
+    @if (result != null)
+    {
+    
+        @if(!string.IsNullOrEmpty(result.Suggestion))
+        {
+            <div class="suggestion">
+                <p>Se han recuperado <strong>@result.Count</strong> documentos. ¿Quisite decir <strong><a @onclick="RunSuggestion" href="#">@result.Suggestion</a></strong>?</p>
+            </div>
+        }
+
+        <ul class="results">
+            @foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(15))
+            {
+                <li>
+                    <div class="item">
+                        <a class="title" href=@Concat(@SearchItem.Convert(item.Title),@SearchItem.id)  target="_blank">@SearchItem.Convert(item.Title)</a>
+                        <p>... @SearchItem.Convert(item.Snippet) ...</p>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+}
+
+<a href=@Concat(@l,15) target="_blank">click me</a>
 
 @code {
-
     private string query = "";
-    private string corpus_path = "";
+    private string [] corpus_path = new string []{"\\20news", "\\Reuters" ,"\\Cran"};
+    private bool [] selected_corpus_path = new bool[]{true, false,false};
+    
     private ISearchResult ? result;
     private IEnumerable<string> ? directories;
     private bool add_corpus_path=true;
+
+    private string l ="lola";
+    private int x = 15;
     private bool vectorial = true;
     private bool boolean;
     private bool generalized_vectorial;
 
+    private VSMTermDoc vectorialModel ;
+    private BSMTermDoc booleanModel;
+    private GVSMTermDoc generalizedModel;
+
+    private IEnumerable<IDocument> docs = new LinkedList<IDocument>();
+    private bool Load = false;
+
+    private string Concat(string name,int id)
+    {
+        return $"/Reader/Text/{name}/{id}";
+    }
+    private void LoadCollections()
+    {
+        bool temp =true;
+        for (int i = 0; i < corpus_path.Length; i++)
+        {
+            if(selected_corpus_path[i])
+            {
+                temp = false;
+                string temp_path = @"D:\Studio\SRI\3Models-SRI\contents"+corpus_path[i];
+                directories = Utils.ReadAllFiles(temp_path);
+                @* switch (i)
+                {
+                    case 0:
+                    {
+                        LinkedList<IDocument> d = new LinkedList<IDocument>();
+                        foreach (var item in directories)
+                        {
+                            d.AddLast(new DP.Document(item, Parser.NewsgroupParser));
+                        }
+                        docs = d;
+                        break;
+                    }
+                    case 1:
+                    {
+                        foreach (var item in directories)
+                        {
+                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndReutersMatcherCreator(), Parser.ReutersParser));
+                        }
+                        break;
+                    }
+                    case 2:
+                    {
+                        foreach (var item in directories)
+                        {
+                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndCranMatcherCreator(), Parser.CranParser));
+                        }
+                        break;
+                    }
+                } *@
+               
+            }
+        }
+
+        if(!temp)
+        {
+            add_corpus_path = false;
+            Load = true;
+            vectorialModel = new VSMTermDoc(docs);
+            booleanModel = new BSMTermDoc(docs); 
+            generalizedModel = new GVSMTermDoc(docs); 
+        }
+        Load = false;
+
+
+    }
 
     /// <summary>
     /// Este metodo settea en true el tipo de modelo SRI seleccionado en los radio buttons
@@ -109,23 +207,6 @@
         }
     }
     
-    /// <summary>
-    /// Este metodo obtiene el corpus del SRI a partir de los archivos en el directorio y subdirectorios especificados en una direccion determinada
-    /// </summary>
-    private void UpdateCorpus()
-    {
-        if(corpus_path != null)
-        {
-            directories = Utils.ReadAllFiles(corpus_path);
-            add_corpus_path = false;
-        }
-
-    }
-     private void SetAddPath()
-    {
-        add_corpus_path= true;
-        corpus_path = "";
-    }
 
     /// <summary>
     /// Este metodo rehace la recuperacion de documentos a partir de la sugerencia de la busqueda anterior
@@ -147,31 +228,21 @@
     {
         if(!string.IsNullOrEmpty(query) && directories!=null)
         {
-            if(vectorial)
+           
+            if(vectorial && vectorialModel != null)
             {
 
-                LinkedList<IDocument> docs = new LinkedList<IDocument>();
-                foreach (var item in directories)
-                {
-                   docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
-                }
-                VSMTermDoc vectorial = new VSMTermDoc(docs);
-                result = new SearchResult(vectorial.Ranking(vectorial.GetSearchItems(VSMTermDoc.CreateQuery(query),300)),""); 
+                result = new SearchResult(vectorialModel.Ranking(vectorialModel.GetSearchItems(vectorialModel.CreateQuery(query),300)),""); 
             }
-            else if(boolean)
+            else if(boolean && booleanModel != null)
             {
-                LinkedList<IDocument> docs = new LinkedList<IDocument>();
-                foreach (var item in directories)
-                {
-                   docs.AddLast(new DP.Document(item, Parser.NewsgroupParser));
-                }
-                BSMTermDoc booleanModel = new BSMTermDoc(docs); 
-                result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(BSMTermDoc.CreateQuery(query),300)),""); 
+                result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(booleanModel.CreateQuery(query),300)),""); 
            
             }
-            else if(generalized_vectorial)
+            else if(generalized_vectorial && generalizedModel != null)
             {
-                
+                result = new SearchResult(generalizedModel.Ranking(generalizedModel.GetSearchItems(generalizedModel.CreateQuery(query),300)),""); 
+           
             }
             else result= null;
 
@@ -179,5 +250,4 @@
 
     }
     
-
 }
