@@ -97,6 +97,7 @@
         </div>
     </div>
 
+
     @if (result != null)
     {
     
@@ -121,10 +122,15 @@
             }
         </ul>
     }
+    @if (qsub && result ==null)
+    {
+        <p>No results found for <b>@query</b></p> 
+    }
+
 }
 
 @code {
-    private string logg = "";
+    private bool qsub = false;
     private string query = "";
     private bool qload = false;
     private bool LogicBoolean = true;
@@ -299,6 +305,7 @@
             }
             else result= null;
             Date.results = result;
+            qsub = true;
     }
     
 }
