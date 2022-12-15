@@ -1,30 +1,28 @@
-import ir_datasets
-import pytrec_eval
 import json
-import math
+import ir_datasets
+import ir_measures
+from ir_measures import *
 
-from pytrec_eval_ext import supported_nicknames
+# cranfield
+# vaswani
 
-data_set = ir_datasets.load(input())
+qrels = ir_datasets.load('vaswani').qrels_iter()
+run = json.load(open(".\\qrels_save"))
 
-evaluator = pytrec_eval.RelevanceEvaluator(
-    data_set.qrels_dict(), {'recall', 'P', 'set_F'})
+results = ir_measures.calc_aggregate(
+    [
+        P(rel=1, judged_only=True)@30,
+        R(rel=1, judged_only=True)@30,
+        SetF(rel=1, judged_only=True)
+    ],
+    qrels, run)
 
-file = open(".\\qrels_save")
+r_value = 0
+p_value = 0
+beta = 1
+for key, value in results.items():
+    r_value = r_value if key.NAME != 'R' else value
+    p_value = p_value if key.NAME != 'P' else value
+    print(f'{key}: {value}')
 
-max_map = -math.inf
-max_ndcg = -math.inf
-min_map = math.inf
-min_ndcg = math.inf
-m_map = 0
-m_ndcg = 0
-for i in evaluator.evaluate(json.loads(file.readline())):
-    m_map += i.map
-    m_ndcg += i.ndcg
-
-    min_map = min(min_map, i.map)
-    min_map = min(min_map, i.map)
-
-file.close()
-
-print(supported_nicknames.item())
+print(f"F:{(1 + beta**2) * p_value * r_value / (beta**2 * p_value + r_value)}")

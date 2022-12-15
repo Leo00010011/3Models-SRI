@@ -14,24 +14,22 @@ foreach (var item in docs_file!.Values)
 }
 
 var model = new VSMTermDoc(list);
-var relevance = new double[] { 0.122, 0.70, 0.210, 0.400, 0.198 };
-var qrels = new Dictionary<string, Dictionary<string, int>>();
+var qrels = new Dictionary<string, Dictionary<string, double>>();
 foreach (var query in queries_file!.Values)
 {
-    var query_dic = new Dictionary<string, int>();
-    foreach (var item in model.GetSearchItems(model.CreateQuery(query.text), 30))
+    var query_dic = new Dictionary<string, double>();
+    var items = model.GetSearchItems(model.CreateQuery(query.text), 30);
+    var max = items.Max(x => x.Score);
+    foreach (var item in items)
     {
-        // -1 -> 0.122
-        //  1 -> 0.70
-        //  2 -> 0.210
-        //  3 -> 0.400
-        //  4 -> 0.198
-        query_dic.Add(item.URL, relevance.Relevance(0, item.Score, (x, y) => x > y));
+        query_dic.Add(item.URL, item.Score);
     }
     qrels.Add(query.query_id, query_dic);
 }
 
-JsonSerializer.Serialize(File.Create(@".\qrels_save"), qrels, typeof(Dictionary<string, Dictionary<string, int>>));
+var file = File.CreateText(@".\qrels_save");
+file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
+file.Close();
 
 struct Doc
 {
