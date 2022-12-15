@@ -78,12 +78,12 @@
         }
 
         <ul class="results">
-            @foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(15))
+            @foreach (var item in (result.Select((value, index) => (index, value)).TakeWhile(x => x.value.Score > 0)).Take(15))
             {
                 <li>
                     <div class="item">
-                        <a class="title" href=@item.URL>@SearchItem.Convert(item.Title)</a>
-                        <p>... @SearchItem.Convert(item.Snippet) ...</p>
+                        <a class="title" href=@Concat(item.value.Title,item.index)  target="_blank">@item.value.Title</a>
+                        <p>... @item.value.Snippet ...</p>
                     </div>
                 </li>
             }
@@ -91,16 +91,19 @@
     }
 }
 
+<a href=@Concat(@l,15) target="_blank">click me</a>
 
 @code {
     private string query = "";
-    private string [] corpus_path = new string []{"\\20News", "\\Reuters" ,"\\Cran"};
+    private string [] corpus_path = new string []{"\\20news", "\\Reuters" ,"\\Cran"};
     private bool [] selected_corpus_path = new bool[]{true, false,false};
     
     private ISearchResult ? result;
     private IEnumerable<string> ? directories;
     private bool add_corpus_path=true;
 
+    private string l ="lola";
+    private int x = 15;
     private bool vectorial = true;
     private bool boolean;
     private bool generalized_vectorial;
@@ -112,6 +115,10 @@
     private IEnumerable<IDocument> docs = new LinkedList<IDocument>();
     private bool Load = false;
 
+    private string Concat(string name,int id)
+    {
+        return $"/Reader/Text/{name}/{id}";
+    }
     private void LoadCollections()
     {
         bool temp =true;

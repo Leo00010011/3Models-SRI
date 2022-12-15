@@ -34,6 +34,8 @@ public abstract class Storage<T1, T2, V, D> : IStorage<T1, T2, V, D>, ICollectio
 
     public virtual IEnumerator<D> GetEnumerator() => corpus.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+    public virtual bool ContainsKey(T1 key) => MatrixStorage.ContainsKey(key);
 }
 
 public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, IStorage<IDocument, string, IWeight, IDocument>, ICollection<IDocument>
@@ -68,6 +70,7 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
         if (terms is null) return;
 
         MatrixStorage.Add(item, terms);
+        
         DocsFrecModal.Add(item, ModalFrec);
     }
 
