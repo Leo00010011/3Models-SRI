@@ -3,9 +3,10 @@ using DP.Interface;
 using System.Text.Json;
 using SRI;
 using Utils;
+using System.Diagnostics;
 
-var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
-var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
+// var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
+// var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
 
 // namespace Test;
 // public static class TestingMethods
@@ -45,47 +46,47 @@ var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"
 //         }
 //     }
 
-    //public static void Main(string[] args)
-    //{
-        // Stopwatch cloc = new Stopwatch();
-        // IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
+//public static void Main(string[] args)
+//{
+// Stopwatch cloc = new Stopwatch();
+// IEnumerable<string> docsID = ReadAllFiles(".\\contents\\20 Newsgroups\\20news-18828");
 
-        // LinkedList<IDocument> docs = new LinkedList<IDocument>();
-        // foreach (var item in docsID)
-        // {
-        //    docs.AddLast(new Document(item, Parser.NewsgroupParser));
-        // }
+// LinkedList<IDocument> docs = new LinkedList<IDocument>();
+// foreach (var item in docsID)
+// {
+//    docs.AddLast(new Document(item, Parser.NewsgroupParser));
+// }
 
-        // cloc.Start();
-        // ReadTest(docs);
-        // cloc.Stop();
+// cloc.Start();
+// ReadTest(docs);
+// cloc.Stop();
 
-        // Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
-        // cloc.Reset();
+// Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
+// cloc.Reset();
 
-        // cloc.Start();
-        // WMTermDoc vectorial = new WMTermDoc(docs);
-        // cloc.Stop();
+// cloc.Start();
+// WMTermDoc vectorial = new WMTermDoc(docs);
+// cloc.Stop();
 
-        // Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
-        // cloc.Reset();
+// Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
+// cloc.Reset();
 
-        // SRIVectorDic<string, IWeight> query = new SRIVectorDic<string, IWeight>();
+// SRIVectorDic<string, IWeight> query = new SRIVectorDic<string, IWeight>();
 
-        // QueryVSMWeight hoW = new QueryVSMWeight(2, 2);
-        // query.Add("house", hoW);
+// QueryVSMWeight hoW = new QueryVSMWeight(2, 2);
+// query.Add("house", hoW);
 
-        // cloc.Start();
-        // SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(query, 30));
-        // cloc.Stop();
+// cloc.Start();
+// SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(query, 30));
+// cloc.Stop();
 
-        // Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+// Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
 
-        // foreach (var item in results.Select(x => x.Title))
-        // {
-        //     System.Console.WriteLine(SearchItem.Convert(item));
-        // }
-    //}
+// foreach (var item in results.Select(x => x.Title))
+// {
+//     System.Console.WriteLine(SearchItem.Convert(item));
+// }
+//}
 
 //     private static char ReadTest(IEnumerable<IDocument> docs)
 //     {
@@ -101,9 +102,9 @@ var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"
 //     }
 // }
 
-var file = File.CreateText(@".\qrels_save");
-file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
-file.Close();
+// var file = File.CreateText(@".\qrels_save");
+// file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
+// file.Close();
 
 // string s ="From: hgomez@magnus.acs.ohio-state.edu (Humberto L Gomez)\nsubject: MULTISYNC 3D NEC MONITOR FOR SALE\n\n\nI have an NEC multisync 3d monitor for sale. great condition. looks new. it is\n.28 dot pitch\nSVGA monitor that syncs from 15-38khz\n\nit is compatible with all aga amiga graphics modes.\nleave message if interested. make an offer.\n-- ";
 // ParsedInfo a = Parser.NewsgroupParser(s);
@@ -210,12 +211,3 @@ char ReadTest(IEnumerable<IDocument> docs)
 }
 
 System.Console.ReadKey();
-// x[0]= true;
-// x[1]= true;
-
-    public Query(string query_id, string text)
-    {
-        this.query_id = query_id;
-        this.text = text;
-    }
-}
