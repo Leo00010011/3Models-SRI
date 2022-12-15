@@ -78,12 +78,12 @@
         }
 
         <ul class="results">
-            @foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(15))
+            @foreach (var item in (result.Select((value, index) => (index, value)).TakeWhile(x => x.value.Score > 0)).Take(15))
             {
                 <li>
                     <div class="item">
-                        <a class="title" href=@Concat(@SearchItem.Convert(item.Title),@SearchItem.id)  target="_blank">@SearchItem.Convert(item.Title)</a>
-                        <p>... @SearchItem.Convert(item.Snippet) ...</p>
+                        <a class="title" href=@Concat(item.value.Title,item.index)  target="_blank">@item.value.Title</a>
+                        <p>... @item.value.Snippet ...</p>
                     </div>
                 </li>
             }
