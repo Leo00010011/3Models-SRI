@@ -45,7 +45,9 @@
   <div class="spinner-border ms-auto text-primary" role="status" aria-hidden="true"></div>
 </div>
 
-    <p>@logg</p>
+
+    <p> @logg </p>
+
     
 }
 @if(!add_corpus_path && !Load)
@@ -198,32 +200,22 @@
 
     }
 
+
+
     private async Task load()
     {
         if(!add_corpus_path)
         {
-            Stopwatch cloc = new Stopwatch();
-            logg += "Building models...\nVectorial model start building\n";
-            
-            cloc.Start();
+           
             vectorialModel =  new VSMTermDoc(docs);
-            cloc.Stop();
-            logg+= $"Vectorial model complete {cloc.Elapsed}\nBoolean model start building\n";
-            
-            cloc.Start();
             booleanModel =  new BSMTermDoc(docs); 
-            cloc.Stop();
-            logg+= $"Boolean model complete {cloc.Elapsed}\nGeneralized Vectorial model start building\n";
-
-            cloc.Start();
-            @* generalizedModel =  new GVSMTermDoc(docs);  *@
-            cloc.Stop();
-            logg+= $"Generalized Vectorial model model complete {cloc.Elapsed}\n";
-            
+            generalizedModel =  new GVSMTermDoc(docs); 
+         
             Load = false;
 
         }
     }
+    
 
     /// <summary>
     /// Este metodo settea en true el tipo de modelo SRI seleccionado en los radio buttons
