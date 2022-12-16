@@ -1,6 +1,7 @@
 using DP.Interface;
 using Utils;
 using System.Collections;
+using System.Text.RegularExpressions;
 namespace DP;
 
 #nullable disable
@@ -11,6 +12,36 @@ public enum stateDoc
     deleted,
     notchanged
 }
+
+
+public static class DPUtils
+{
+    public static string GetTextReuters(string text)
+    {
+        Regex start = new Regex(@"(<BODY>){1}");
+        Regex end = new Regex(@"(</BODY>){1}");
+        Match startMatch = start.Match(text);
+        Match endMatch = end.Match(text);
+        int startIndex = startMatch.Index + "<BODY>".Length;
+        return text.Substring(startIndex, endMatch.Index - startIndex);
+    }
+
+    public static string GetTextDummy(string text)
+    {
+        return text;
+    }
+
+    public static string GetTextCran(string text)
+    {
+        Regex start = new Regex(@"(\n.W\n){1}");
+        Match startMatch = start.Match(text);
+        Regex end = new Regex(@"\n.I\s[0-9]+\n");
+        Match endMatch = end.Match(text);
+        int startIndex = startMatch.Index + 3;
+        return text.Substring(startIndex,endMatch.Index - startIndex);
+    }
+}
+
 
 public class LazyKMP : ILazyMatcher
 {
@@ -424,18 +455,17 @@ public class Document : IDocument, IComparable
     private DateTime modifiedDateTime;
     private Func<IEnumerable<char>, ParsedInfo> parser;
 
+    protected Func<string,string> getTextMethod;
     
 
-    public Document(string id, Func<IEnumerable<char>, ParsedInfo> parser)
+    public Document(string id, Func<IEnumerable<char>, ParsedInfo> parser, Func<string,string> getTextMethod)
     {
         Id = id;
         path = id;
         modifiedDateTime = default(DateTime);
         this.parser = parser;
-    }
-
-
-  
+        this.getTextMethod = getTextMethod;
+    }  
 
     public static IEnumerable<char> GetChars(StreamReader reader)
     {
@@ -493,7 +523,8 @@ public class Document : IDocument, IComparable
         {
             result = sr.ReadToEnd();
         }
-        return result;
+        
+        return getTextMethod(result);
     }
 }
 
@@ -502,13 +533,13 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
 
     class CollectionSplitterEnumerator : IEnumerator<IDocument>
     {
-        public IDocument Current => current;
+        public IDocument Current => current.Value;
 
         int index = 1;
 
         bool disposed = false;
 
-        public EmbebedDocument current = null;
+        LinkedListNode<EmbebedDocument> current = null;
 
         object IEnumerator.Current => this.Current;
         
@@ -532,18 +563,39 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
         {
             if(disposed)
                 return false;
-
-            if(current == null || (!current.EndOfFileReached && Utils.Utils.Peek(enumerable.stream) != -1 && current.EndReached))
+            
+            if(current == null ||(!current.Value.EndOfFileReached && Utils.Utils.Peek(enumerable.stream) != -1 && (enumerable.parsedCompleted || current.Value.EndReached)))
             {
-                current = new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable);
+
+                if(index <= enumerable.createdDoc.Count)
+                {
+                    if(current == null)
+                    {
+                        current = enumerable.createdDoc.First;
+                    }
+                    else
+                    {
+                        current = current.Next;
+                    }
+                    current.Value.Reset();
+                }
+                else
+                {
+                    EmbebedDocument preview = null;
+                    if(current != null)
+                        preview = current.Value;
+                    current = new LinkedListNode<EmbebedDocument>(new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable,preview,enumerable.getTextMethod));
+                    enumerable.createdDoc.AddLast(current);
+                }
                 index++;
                 return true;
             }
             else
             {
-                if(!current.EndReached)
+                if(!(enumerable.parsedCompleted || current.Value.EndReached))
                     throw new Exception("Tienes que leer el documento anterior hasta el final");
                 //Solo se llega aquí si current.EndOfFileReached es true
+                enumerable.parsedCompleted = true;
                 Dispose();
                 return false;
             }
@@ -566,16 +618,23 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
 
     bool streamUsed = false;
 
+    bool parsedCompleted = false;
+
     Func<IEnumerable<char>, ParsedInfo> parser;
 
     ICreator<ILazyMatcher> endMatcherCreator;
 
+    LinkedList<EmbebedDocument> createdDoc = new LinkedList<EmbebedDocument>();
+
     BufferedStream stream;
-    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> endMatcherCreator, Func<IEnumerable<char>, ParsedInfo> parser)
+
+    Func<string,string> getTextMethod;
+    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> endMatcherCreator, Func<IEnumerable<char>, ParsedInfo> parser, Func<string,string> getTextMethod)
     {
         this.collectionPath = collectionPath;
         this.endMatcherCreator = endMatcherCreator;
         this.parser = parser;
+        this.getTextMethod = getTextMethod;
         stream = new BufferedStream(File.Open(collectionPath,FileMode.Open));
     }
 
@@ -674,6 +733,7 @@ public class EmbebedDocument : Document
 
         public void Dispose()
         {
+            enumerable.enumeratorSended = false;
             enumerable = null;
             matcher = null;
         }
@@ -746,7 +806,11 @@ public class EmbebedDocument : Document
 
     long length = -1;
 
+    EmbebedDocument preview = null;
+
     ParsedInfo info = null;
+
+    int index;
 
     BufferedStream stream;
 
@@ -756,8 +820,10 @@ public class EmbebedDocument : Document
 
     CollectionSplitter splitter;
 
-    public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter) : base(id, parser)
+    public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter, EmbebedDocument preview, Func<string,string> getTextMethod) : base(id, parser,getTextMethod)
     {
+        this.index = index;
+        this.preview = preview;
         this.splitter = splitter;
         path = id;
         Id = path + "\\" + index;
@@ -788,6 +854,11 @@ public class EmbebedDocument : Document
         return (localStream,openedHere,prevPos);
     }
 
+    public void Reset()
+    {
+        EndReached = false;
+    }
+
     void DevolverStream(BufferedStream localStream, bool openedHere, long prevPos)
     {
         if(openedHere)
@@ -796,7 +867,6 @@ public class EmbebedDocument : Document
         }
         else
         {
-            localStream.Flush();
             localStream.UnderlyingStream.Position = prevPos;
         }
     }
@@ -811,17 +881,23 @@ public class EmbebedDocument : Document
         localStream.Read(arr,0,(int)length);
         result = String.Concat(arr.Select((c,index) => (char)c));
         DevolverStream(localStream,openedHere,prevPos);
-        return result;
+        return getTextMethod(result);
 
     }
     public override  IEnumerator<char> GetEnumerator()
     {
-        if(!enumeratorSended)
+        if(!enumeratorSended && ( preview == null || preview.EndReached ))
         {
             enumeratorSended = true;
             return new EmbebedDocumentEnumerator(this);
         }
-        throw new InvalidOperationException("Solo se puede pedir un enumerator");
+        else
+        {
+            if(enumeratorSended)
+                throw new InvalidOperationException("Solo se puede pedir un enumerator");
+            else
+                throw new InvalidOperationException("Hay que leer el documento anterior(" + preview.index + ") hasta el final para poder leer este");
+        }
     }
  
 }
@@ -883,8 +959,6 @@ public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
         return getFrecs().Select(x => (x.Key, x.Value)).GetEnumerator();
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return getFrecs().Select(x => (x.Key, x.Value)).GetEnumerator();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+    
 }

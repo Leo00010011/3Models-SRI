@@ -13,7 +13,10 @@ using System.Runtime.InteropServices;
 
 public abstract class Storage<T1, T2, V, D> : IStorage<T1, T2, V, D>, ICollection<D> where T1 : notnull where T2 : notnull
 {
-    protected Storage(IEnumerable<D> corpus) => this.corpus = corpus;
+    protected Storage(IEnumerable<D> corpus)
+    {
+        this.corpus = corpus;
+    }
 
     protected abstract IDictionary<T1, IDictionary<T2, V>> MatrixStorage { get; set; }
     public virtual IDictionary<T2, V> this[T1 index] => MatrixStorage[index];
@@ -48,14 +51,12 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
         DocsFrecModal = new Dictionary<IDocument, int>();
         InvFrecTerms = new Dictionary<string, (int, int)>();
 
-        if(Is_Add) return;
+        if (Is_Add) return;
 
         foreach (var item in corpus)
             this.Add(item);
         UpdateDocs();
     }
-
-    public override IEnumerable<IDocument> corpus => DocsFrecModal.Keys;
 
     public override int Count => DocsFrecModal.Count;
 
@@ -70,7 +71,6 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
         if (terms is null) return;
 
         MatrixStorage.Add(item, terms);
-        
         DocsFrecModal.Add(item, ModalFrec);
     }
 
@@ -187,7 +187,7 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
         MatrixStorage = new Dictionary<string, IDictionary<IDocument, IWeight>>();
         DocsFrecModal = new Dictionary<IDocument, (int, double)>();
 
-        if(Is_Add) return;
+        if (Is_Add) return;
 
         foreach (var item in corpus)
             this.Add(item);
@@ -252,6 +252,7 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
 
     protected virtual void GenWeightTerms(IDocument doc, in int numdoc)
     {
+        doc.UpdateDateTime();
         int ModalFrec = 0;
         ProcesedDocument termsresult = new ProcesedDocument(doc);
         if (termsresult.Length == 0) return;
@@ -271,7 +272,6 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
         }
 
         DocsFrecModal.Add(doc, (numdoc, ModalFrec));
-        doc.UpdateDateTime();
     }
 
     public virtual void UpdateAllWeight()
@@ -290,9 +290,11 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
 
         foreach (var item in corpus.Select((doc, i) => (doc, i)))
         {
-            
-            var value = DocsFrecModal[item.doc];
-            DocsFrecModal[item.doc] = (value.Item1, Math.Sqrt(norma2[value.Item1]));
+
+            //var value = DocsFrecModal[item.doc];
+            (int, double) value;
+            if (DocsFrecModal.TryGetValue(item.doc, out value))
+                DocsFrecModal[item.doc] = (value.Item1, Math.Sqrt(norma2[value.Item1]));
         }
         needUpdate = false;
     }
@@ -300,6 +302,8 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
     public IEnumerable<(IDocument, double)> GetAllDocs() => DocsFrecModal.Select(x => (x.Key, x.Value.Item2));
 
     public virtual bool ContainsKey(string key) => MatrixStorage.ContainsKey(key);
+
+    public override IEnumerator<IDocument> GetEnumerator() => DocsFrecModal.Keys.GetEnumerator();
 }
 
 
@@ -308,7 +312,7 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
     public new double[] this[IDocument index] => GetKey2Vector(index);
     public double[] this[int index] => GetKey2Vector(index);
 
-    private const int saveSize = 8000;
+    private const int saveSize = 3000;
     private double[][]? actualDocs;
     private int actualIndex;
     private Dictionary<IDocument, int> docs;
@@ -323,10 +327,9 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
 
         if (Is_Add) return;
 
-        foreach (var item in corpus.Select((doc, index) => (index, doc)))
+        foreach (var item in corpus)
         {
-            this.Add(item.doc);
-            docs.Add(item.doc, item.index);
+            this.Add(item);
         }
         UpdateDocs();
     }
@@ -361,7 +364,6 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
 
         foreach (var doc in matrix)
         {
-            // Dictionary<int, double> docVector = new();
             foreach (var term in doc.Value)
             {
                 if (!trasp.ContainsKey(term.Key))
@@ -383,13 +385,17 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
     public override void UpdateAllWeight()
     {
         if (!needUpdate) return;
+        foreach (var item in MatrixStorage.Keys.Select((value, index) => (index, value)))
+        {
+            docs.Add(item.value, item.index);
+        }
 
         if (File.Exists(@".\DocSave\SaveManager"))
         {
             var readsavefile = File.OpenText(@".\DocSave\SaveManager");
-            var saves = JsonSerializer.Deserialize(readsavefile.ReadToEnd(), typeof(string[])) as IEnumerable<string>;
+            var saves = JsonSerializer.Deserialize<string[]>(readsavefile.ReadToEnd());
             readsavefile.Close();
-            if (!saves!.All(x => corpus.Select(x => x.Id).Contains(x)))
+            if (saves!.Length != corpus.Count() || !saves!.All(x => corpus.Select(x => x.Id).Contains(x)))
                 File.Delete(@".\DocSave\SaveManager");
         }
 
@@ -441,17 +447,16 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
                     save[(docindex - firstindex) * saveSize + minterm.Key] += minterm.Value;
                 }
             }
-            if ((docindex != 0 && docindex % saveSize == 0) || docindex == MatrixStorage.Count - 1)
+            if ((docindex != 0 && (docindex + 1) % saveSize == 0) || (docindex + 1) == MatrixStorage.Count)
             {
-                int size = (docindex / saveSize) - (docindex == MatrixStorage.Count - 1 ? 0 : 1);
+                firstindex = docindex + 1;
+                int size = (firstindex / saveSize) - (firstindex == MatrixStorage.Count ? 0 : 1);
                 using (var writer = new BinaryWriter(File.Open($@".\DocSave\save{size}", FileMode.Create)))
                 {
-
                     var bytes = MemoryMarshal.Cast<double, byte>(save.AsSpan());
                     writer.Write(bytes);
                 }
-                save = new double[Math.Min(saveSize, MatrixStorage.Count - docindex) * docspattern!.Length];
-                firstindex = docindex;
+                save = new double[Math.Min(saveSize, MatrixStorage.Count - firstindex) * docspattern!.Length];
             }
             docindex++;
         }
@@ -480,4 +485,6 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
         docspattern = tempPattern.OrderBy(x => x.Key).Select(x => x.Value).ToArray();
         return docsindex;
     }
+
+    public override IEnumerator<IDocument> GetEnumerator() => MatrixStorage.Keys.GetEnumerator();
 }

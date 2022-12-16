@@ -141,9 +141,9 @@ public class VSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDo
     }
 }
 
-public class GVSMTermDoc : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
+public class GVSMDocTerm : WMTermDoc, ISRIModel<string, int, IWeight, string, IDocument>, ICollection<IDocument>
 {
-    public GVSMTermDoc(IEnumerable<IDocument> corpus) : base(corpus) => Storage = new GVSMStorageDT(corpus);
+    public GVSMDocTerm(IEnumerable<IDocument> corpus) : base(corpus) => Storage = new GVSMStorageDT(corpus);
 
     public SearchItem[] GetSearchItems(double[] query, int snippetLen)
     {

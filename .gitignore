@@ -3,6 +3,7 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+
 # User-specific files
 *.rsuser
 *.suo
@@ -393,3 +394,4 @@ Final report/typeinst.ps
 .gitignore
 Final report/final_report.synctex.gz
 Final report/final_report.out
+Final report/final_report.pdf

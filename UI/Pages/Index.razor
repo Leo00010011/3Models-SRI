@@ -44,8 +44,7 @@
   <h1 class="text-primary">Loading</h1>
   <div class="spinner-border ms-auto text-primary" role="status" aria-hidden="true"></div>
 </div>
-
-    
+   
 }
 @if(!add_corpus_path && !Load)
 {
@@ -144,7 +143,7 @@
 
     private VSMTermDoc vectorialModel ;
     private BSMTermDoc booleanModel;
-    private GVSMTermDoc generalizedModel;
+    private GVSMDocTerm generalizedModel;
 
     private IEnumerable<IDocument> docs = new LinkedList<IDocument>();
     private bool Load = false;
@@ -161,7 +160,17 @@
             if(selected_corpus_path[i])
             {
                 temp = false;
-                string prefix = Path.GetFullPath(@".\contents");
+                string cwd = Directory.GetCurrentDirectory();
+                string prefix;
+                if(cwd.Substring(cwd.Length - 2) == "UI")
+                {
+                    Directory.SetCurrentDirectory(@"..");
+                }
+                else
+                {
+                    Directory.SetCurrentDirectory(@".");
+                }
+                prefix = Path.GetFullPath(@".\contents");
                 string temp_path = prefix+corpus_path[i];
                 directories = Utils.ReadAllFiles(temp_path);
                 switch (i)
@@ -171,7 +180,7 @@
                         LinkedList<IDocument> d = new LinkedList<IDocument>();
                         foreach (var item in directories)
                         {
-                            d.AddLast(new DP.Document(item, Parser.NewsgroupParser));
+                            d.AddLast(new DP.Document(item, Parser.NewsgroupParser,DP.DPUtils.GetTextDummy));
                         }
                         docs = d;
                         break;
@@ -180,7 +189,7 @@
                     {
                         foreach (var item in directories)
                         {
-                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndReutersMatcherCreator(), Parser.ReutersParser));
+                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndReutersMatcherCreator(), Parser.ReutersParser,DP.DPUtils.GetTextReuters));
                         }
                         break;
                     }
@@ -188,7 +197,7 @@
                     {
                         foreach (var item in directories)
                         {
-                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndCranMatcherCreator(), Parser.CranParser));
+                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndCranMatcherCreator(), Parser.CranParser,DP.DPUtils.GetTextCran));
                         }
                         break;
                     }
@@ -212,7 +221,7 @@
            
             vectorialModel =  new VSMTermDoc(docs);
             booleanModel =  new BSMTermDoc(docs); 
-            generalizedModel =  new GVSMTermDoc(docs); 
+            generalizedModel =  new GVSMDocTerm(docs); 
          
             Load = false;
 
@@ -275,7 +284,6 @@
         if(!string.IsNullOrEmpty(query) && directories!=null)
         {
            await Task.Run(()=> RunQ());
-          
         }
         qload = false;
 
