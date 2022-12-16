@@ -1,4 +1,5 @@
-﻿namespace DP.Interface;
+﻿
+namespace DP.Interface;
 
 using DP;
 using System;
