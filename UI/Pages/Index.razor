@@ -27,8 +27,8 @@
         </div>
 
     </div>
+        <button type="default" class="btn btn-primary m-1" @onclick="LoadCollections">Accept</button>
 
-        <button type="default" class="btn btn-primary mt-1" @onclick="LoadCollections">Accept</button>
 </div>
 </div>
         
@@ -44,6 +44,8 @@
   <h1 class="text-primary">Loading</h1>
   <div class="spinner-border ms-auto text-primary" role="status" aria-hidden="true"></div>
 </div>
+
+    <p>@logg</p>
     
 }
 @if(!add_corpus_path && !Load)
@@ -52,7 +54,17 @@
 
     <input class="p-1 my-1" @bind="query" placeholder="Introduzca su búsqueda">
 
+@if(!qload)
+{
     <button type="default" class="btn btn-primary mx-1" @onclick="RunQuery">🔍 Search</button>
+
+}
+@if(qload)
+{       
+    <button type="button" class="btn btn-primary mx-1" disabled>
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading
+    </button>
+}
 
     <div>
         <div class="form-check form-check-inline">
@@ -60,10 +72,22 @@
           <label class="form-check-label" for="inlineRadio1">Vectorial Model</label>
         </div>
 
+     
+
+
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="2" @onchange="SRISelector">
           <label class="form-check-label" for="inlineRadio2">Boolean Model</label>
         </div>
+
+        @if(boolean)
+        {
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox"  id="log" @bind="LogicBoolean">
+                <label class="form-check-label" for="log">Boolean Query</label>
+            </div>
+        }
+
     
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="3" @onchange="SRISelector" >
@@ -98,7 +122,10 @@
 }
 
 @code {
+    private string logg = "";
     private string query = "";
+    private bool qload = false;
+    private bool LogicBoolean = true;
     private string [] corpus_path = new string []{"\\20news", "\\Reuters" ,"\\Cran"};
     private bool [] selected_corpus_path = new bool[]{true, false,false};
     
@@ -175,10 +202,24 @@
     {
         if(!add_corpus_path)
         {
-
+            Stopwatch cloc = new Stopwatch();
+            logg += "Building models...\nVectorial model start building\n";
+            
+            cloc.Start();
             vectorialModel =  new VSMTermDoc(docs);
+            cloc.Stop();
+            logg+= $"Vectorial model complete {cloc.Elapsed}\nBoolean model start building\n";
+            
+            cloc.Start();
             booleanModel =  new BSMTermDoc(docs); 
-            generalizedModel =  new GVSMTermDoc(docs); 
+            cloc.Stop();
+            logg+= $"Boolean model complete {cloc.Elapsed}\nGeneralized Vectorial model start building\n";
+
+            cloc.Start();
+            @* generalizedModel =  new GVSMTermDoc(docs);  *@
+            cloc.Stop();
+            logg+= $"Generalized Vectorial model model complete {cloc.Elapsed}\n";
+            
             Load = false;
 
         }
@@ -233,20 +274,31 @@
     /// Metodo para obtener los documentos relevantes a una consulta(query) segun el modelo de SRI correspondiente
     /// </summary>
     
-    private void RunQuery() 
+    private async Task RunQuery() 
     {
+        qload = true;
         if(!string.IsNullOrEmpty(query) && directories!=null)
         {
-           
-            if(vectorial && vectorialModel != null)
+           await Task.Run(()=> RunQ());
+          
+        }
+        qload = false;
+
+    }
+
+    private async Task RunQ()
+    {
+          if(vectorial && vectorialModel != null)
             {
 
                 result = new SearchResult(vectorialModel.Ranking(vectorialModel.GetSearchItems(vectorialModel.CreateQuery(query),300)),""); 
             }
             else if(boolean && booleanModel != null)
             {
-                result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(booleanModel.CreateQuery(query),300)),""); 
-           
+                if(LogicBoolean)
+                    result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(booleanModel.CreateQuery(query),300)),""); 
+                else 
+                    result = new SearchResult(booleanModel.Ranking(booleanModel.GetSearchItems(booleanModel.CreateQuery(BSMTermDoc.ConvertToBooleanQuery(query)),300)),""); 
             }
             else if(generalized_vectorial && generalizedModel != null)
             {
@@ -255,8 +307,6 @@
             }
             else result= null;
             Date.results = result;
-        }
-
     }
     
 }
