@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages().AddRazorPagesOptions(options =>
     {
         options.Conventions.AddPageRoute("/Text", "Text/{id:int}");
-    });
+        });
 builder.Services.AddServerSideBlazor();
 
 var app = builder.Build();
