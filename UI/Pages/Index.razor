@@ -79,12 +79,14 @@
         }
 
         <ul class="results">
-            @foreach (var item in (result.TakeWhile(x => x.Score > 0)).Take(30))
+
+            @foreach (var item in (result.Select((value, index) => (index, value)).TakeWhile(x => x.value.Score > 0)).Take(15))
             {
                 <li>
                     <div class="item">
-                        <a class="title" href=@Concat(@SearchItem.Convert(item.Title),)  target="_blank">@SearchItem.Convert(item.Title)</a>
-                        <p>... @SearchItem.Convert(item.Snippet) ...</p>
+                        <a class="title" href=@Concat(@item.index)  target="_blank">@item.value.Title</a>
+                        <p>... @item.value.Snippet ...</p>
+
                     </div>
                 </li>
             }
@@ -92,7 +94,7 @@
     }
 }
 
-<a href=@Concat(@l,15) target="_blank">click me</a>
+
 
 @code {
     private string query = "";
@@ -103,8 +105,6 @@
     private IEnumerable<string> ? directories;
     private bool add_corpus_path=true;
 
-    private string l ="lola";
-    private int x = 15;
     private bool vectorial = true;
     private bool boolean;
     private bool generalized_vectorial;
@@ -116,9 +116,9 @@
     private IEnumerable<IDocument> docs = new LinkedList<IDocument>();
     private bool Load = false;
 
-    private string Concat(string name,int id)
+    private string Concat(int id)
     {
-        return $"/Reader/Text/{name}/{id}";
+        return $"/Reader/Text/{id}";
     }
     private void LoadCollections()
     {
@@ -130,7 +130,7 @@
                 temp = false;
                 string temp_path = @"D:\Studio\SRI\3Models-SRI\contents"+corpus_path[i];
                 directories = Utils.ReadAllFiles(temp_path);
-                @* switch (i)
+                switch (i)
                 {
                     case 0:
                     {
@@ -158,7 +158,7 @@
                         }
                         break;
                     }
-                } *@
+                }
                
             }
         }
@@ -175,6 +175,8 @@
             booleanModel = new BSMTermDoc(docs); 
             generalizedModel = new GVSMTermDoc(docs); 
             Load = false;
+
+
         }
     }
 
@@ -248,7 +250,7 @@
            
             }
             else result= null;
-
+            Date.results = result;
         }
 
     }
