@@ -403,9 +403,9 @@ public class Document : IDocument, IComparable
             StreamReader reader = new StreamReader(path);
             if (info is null) info = parser(GetChars(reader));
             reader.Dispose();
-            reader.Close();
-
             reader = new StreamReader(path);
+            
+
             foreach (var item in GetChars(reader).Skip(info.TitleInit).Take(info.TitleLen))
                 yield return item;
             reader.Dispose();
@@ -454,8 +454,10 @@ public class Document : IDocument, IComparable
 
     public virtual IEnumerable<char> GetSnippet(int snippetLen)
     {
-        if (info is null) info = parser(this);
         StreamReader reader = new StreamReader(path);
+        if (info is null) info = parser(GetChars(reader));
+        reader.Dispose();
+        reader = new StreamReader(path);
         int infoSnippetLen = info.SnippetLen < 0 ? int.MaxValue : info.SnippetLen;
         foreach (var item in GetChars(reader).Skip(info.SnippetInit).Take(Math.Min(infoSnippetLen, snippetLen)))
             yield return item;

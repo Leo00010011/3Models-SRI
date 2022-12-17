@@ -129,7 +129,8 @@
             if(selected_corpus_path[i])
             {
                 temp = false;
-                string temp_path = @"D:\Studio\SRI\3Models-SRI\contents"+corpus_path[i];
+                string prefix = Path.GetFullPath(@".\contents");
+                string temp_path = prefix+corpus_path[i];
                 directories = Utils.ReadAllFiles(temp_path);
                 switch (i)
                 {
