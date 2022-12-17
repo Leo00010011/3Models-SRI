@@ -15,7 +15,7 @@ test_cutoff = [20, 30, 50]
 test_rel = [1, 2, 3]
 
 # medidas a realizar
-results = ir_measures.calc_aggegate(
+results = ir_measures.calc_aggregate(
     [
         # la P es precisión y la R recobrado
 
