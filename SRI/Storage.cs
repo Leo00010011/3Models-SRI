@@ -34,8 +34,6 @@ public abstract class Storage<T1, T2, V, D> : IStorage<T1, T2, V, D>, ICollectio
 
     public virtual IEnumerator<D> GetEnumerator() => corpus.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
-
-    public virtual bool ContainsKey(T1 key) => MatrixStorage.ContainsKey(key);
 }
 
 public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, IStorage<IDocument, string, IWeight, IDocument>, ICollection<IDocument>
@@ -44,11 +42,13 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
     protected Dictionary<string, (int, int)> InvFrecTerms;
     protected bool needUpdate;
 
-    public VSMStorageDT(IEnumerable<IDocument> corpus) : base(corpus)
+    public VSMStorageDT(IEnumerable<IDocument> corpus, bool Is_Add = false) : base(corpus)
     {
         MatrixStorage = new Dictionary<IDocument, IDictionary<string, IWeight>>();
         DocsFrecModal = new Dictionary<IDocument, int>();
         InvFrecTerms = new Dictionary<string, (int, int)>();
+
+        if(Is_Add) return;
 
         foreach (var item in corpus)
             this.Add(item);
@@ -173,6 +173,8 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
                 (item.Value as VSMWeight)!.Update(DocsFrecModal[doc.Key], Count, InvFrecTerms![item.Key].Item2);
         needUpdate = false;
     }
+
+    public virtual bool ContainsKey(string key) => InvFrecTerms.ContainsKey(key);
 }
 
 public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, IStorage<string, IDocument, IWeight, IDocument>, ICollection<IDocument>
@@ -180,10 +182,12 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
     public Dictionary<IDocument, (int, double)> DocsFrecModal;
     protected bool needUpdate;
 
-    public VSMStorageTD(IEnumerable<IDocument> corpus) : base(corpus)
+    public VSMStorageTD(IEnumerable<IDocument> corpus, bool Is_Add = false) : base(corpus)
     {
         MatrixStorage = new Dictionary<string, IDictionary<IDocument, IWeight>>();
         DocsFrecModal = new Dictionary<IDocument, (int, double)>();
+
+        if(Is_Add) return;
 
         foreach (var item in corpus)
             this.Add(item);
@@ -293,6 +297,8 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
     }
 
     public IEnumerable<(IDocument, double)> GetAllDocs() => DocsFrecModal.Select(x => (x.Key, x.Value.Item2));
+
+    public virtual bool ContainsKey(string key) => MatrixStorage.ContainsKey(key);
 }
 
 
@@ -308,11 +314,13 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
     private Dictionary<string, IDictionary<int, double>> weightTerms;
     private MinTerm<int>[]? docspattern;
 
-    public GVSMStorageDT(IEnumerable<IDocument> corpus) : base(corpus)
+    public GVSMStorageDT(IEnumerable<IDocument> corpus, bool Is_Add = false) : base(corpus, true)
     {
         weightTerms = new Dictionary<string, IDictionary<int, double>>();
         docs = new Dictionary<IDocument, int>();
         actualIndex = -1;
+
+        if (Is_Add) return;
 
         foreach (var item in corpus.Select((doc, index) => (index, doc)))
         {
@@ -380,7 +388,7 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
             var readsavefile = File.OpenText(@".\DocSave\SaveManager");
             var saves = JsonSerializer.Deserialize(readsavefile.ReadToEnd(), typeof(string[])) as IEnumerable<string>;
             readsavefile.Close();
-            if (!saves!.All(x => corpus.Any(y => y.Id == x)))
+            if (!saves!.All(x => corpus.Select(x => x.Id).Contains(x)))
                 File.Delete(@".\DocSave\SaveManager");
         }
 

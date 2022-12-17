@@ -4,7 +4,7 @@ import json
 # cranfield
 # vaswani
 
-data_set = ir_datasets.load('vaswani')
+data_set = ir_datasets.load('cranfield')
 
 docs_data_save = {}
 for i in data_set.docs_iter():
