@@ -3,9 +3,7 @@ using Utils;
 using System.Collections;
 namespace DP;
 
-
 #nullable disable
-
 
 public enum stateDoc
 {
@@ -822,9 +820,6 @@ public class EmbebedDocument : Document
     }
  
 }
-
-
-
 public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
 {
     Dictionary<string, int>? frecs;

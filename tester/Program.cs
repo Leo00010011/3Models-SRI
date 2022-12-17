@@ -5,9 +5,6 @@ using SRI;
 using Utils;
 using System.Diagnostics;
 
-// var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
-// var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
-
 // namespace Test;
 // public static class TestingMethods
 // {
@@ -154,61 +151,113 @@ using System.Diagnostics;
 // }
 
 
-Stopwatch cloc = new Stopwatch();
-IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20news");
+// Stopwatch cloc = new Stopwatch();
+// IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\20news");
 
-LinkedList<IDocument> docs1 = new LinkedList<IDocument>();
-foreach (var item in docsID)
+// LinkedList<IDocument> docs1 = new LinkedList<IDocument>();
+// foreach (var item in docsID)
+// {
+//     docs1.AddLast(new Document(item, Parser.NewsgroupParser));
+// }
+
+// IEnumerable<IDocument> docs = docs1.Concat(new CollectionSplitter(@"D:\Studio\SRI\3Models-SRI\contents\Cran\cran.all.1400", new EndCranMatcherCreator(), Parser.CranParser));
+
+// docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\Reuters");
+
+// foreach (var item in docsID)
+// {
+//     docs = docs.Concat(new CollectionSplitter(item, new EndReutersMatcherCreator(), Parser.ReutersParser));
+// }
+
+// cloc.Start();
+// ReadTest(docs);
+// cloc.Stop();
+
+// Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
+// cloc.Reset();
+
+// cloc.Start();
+// VSMDocTerm vectorial = new VSMDocTerm(docs);
+// cloc.Stop();
+
+// Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
+// cloc.Reset();
+
+// cloc.Start();
+// SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
+// cloc.Stop();
+
+// Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
+
+// foreach (var item in results)
+// {
+//     System.Console.WriteLine(item.Snippet);
+//     System.Console.WriteLine(item.GetText());
+// }
+
+// char ReadTest(IEnumerable<IDocument> docs)
+// {
+//     char a = '0';
+//     foreach (var doc in docs)
+//     {
+//         foreach (var item in doc)
+//         {
+//             a = item;
+//         }
+//     }
+//     return a;
+// }
+
+// System.Console.ReadKey();
+
+var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
+var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
+
+LinkedList<IDocument> list = new LinkedList<IDocument>();
+foreach (var item in docs_file!.Values)
 {
-    docs1.AddLast(new Document(item, Parser.NewsgroupParser));
+    list.AddLast(new CranJsonDocument(item.doc_id, item.title, item.text));
 }
 
-IEnumerable<IDocument> docs = docs1.Concat(new CollectionSplitter(@"D:\Studio\SRI\3Models-SRI\contents\Cran\cran.all.1400", new EndCranMatcherCreator(), Parser.CranParser));
-
-docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\Reuters");
-
-foreach (var item in docsID)
+var model = new GVSMTermDoc(list);
+var qrels = new Dictionary<string, Dictionary<string, double>>();
+foreach (var query in queries_file!.Values)
 {
-    docs = docs.Concat(new CollectionSplitter(item, new EndReutersMatcherCreator(), Parser.ReutersParser));
-}
-
-cloc.Start();
-ReadTest(docs);
-cloc.Stop();
-
-Console.WriteLine($"leer documentos solamente cuesta: {cloc.Elapsed}");
-cloc.Reset();
-
-cloc.Start();
-VSMDocTerm vectorial = new VSMDocTerm(docs);
-cloc.Stop();
-
-Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
-cloc.Reset();
-
-cloc.Start();
-SearchItem[] results = vectorial.Ranking(vectorial.GetSearchItems(vectorial.CreateQuery("tony gay"), 30));
-cloc.Stop();
-
-Console.WriteLine($"buscar en el modelo cuesta: {cloc.Elapsed}");
-
-foreach (var item in results)
-{
-    System.Console.WriteLine(item.Snippet);
-    System.Console.WriteLine(item.GetText());
-}
-
-char ReadTest(IEnumerable<IDocument> docs)
-{
-    char a = '0';
-    foreach (var doc in docs)
+    var query_dic = new Dictionary<string, double>();
+    var items = model.GetSearchItems(model.CreateQuery(query.text), 30);
+    foreach (var item in items)
     {
-        foreach (var item in doc)
-        {
-            a = item;
-        }
+        query_dic.Add(item.URL, item.Score);
     }
-    return a;
+    qrels.Add(query.query_id, query_dic);
 }
 
-System.Console.ReadKey();
+var file = File.CreateText(@".\qrels_save");
+file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
+file.Close();
+
+struct Doc
+{
+    public string doc_id { get; set; }
+    public string title { get; set; }
+    public string text { get; set; }
+
+    public Doc(string doc_id, string title, string text)
+    {
+        this.doc_id = doc_id;
+        this.title = title;
+        this.text = text;
+    }
+}
+
+struct Query
+{
+    public string query_id { get; set; }
+    public string text { get; set; }
+
+    public Query(string query_id, string text)
+    {
+        this.query_id = query_id;
+        this.text = text;
+    }
+}
