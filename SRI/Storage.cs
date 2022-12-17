@@ -290,6 +290,7 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
 
         foreach (var item in corpus.Select((doc, i) => (doc, i)))
         {
+            
             var value = DocsFrecModal[item.doc];
             DocsFrecModal[item.doc] = (value.Item1, Math.Sqrt(norma2[value.Item1]));
         }
