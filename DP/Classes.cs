@@ -528,14 +528,12 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
             disposed = true;
         }
 
-
-
         public bool MoveNext()
         {
             if(disposed)
                 return false;
             
-            if(!current.Value.EndOfFileReached && Utils.Utils.Peek(enumerable.stream) != -1 && current.Value.EndReached)
+            if(current == null ||(!current.Value.EndOfFileReached && Utils.Utils.Peek(enumerable.stream) != -1 && (enumerable.parsedCompleted || current.Value.EndReached)))
             {
 
                 if(index <= enumerable.createdDoc.Count)
@@ -552,7 +550,10 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
                 }
                 else
                 {
-                    current = new LinkedListNode<EmbebedDocument>(new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable));
+                    EmbebedDocument preview = null;
+                    if(current != null)
+                        preview = current.Value;
+                    current = new LinkedListNode<EmbebedDocument>(new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable,preview));
                     enumerable.createdDoc.AddLast(current);
                 }
                 index++;
@@ -563,6 +564,7 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
                 if(!current.Value.EndReached)
                     throw new Exception("Tienes que leer el documento anterior hasta el final");
                 //Solo se llega aquí si current.EndOfFileReached es true
+                enumerable.parsedCompleted = true;
                 Dispose();
                 return false;
             }
@@ -584,6 +586,8 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
     }
 
     bool streamUsed = false;
+
+    bool parsedCompleted = false;
 
     Func<IEnumerable<char>, ParsedInfo> parser;
 
@@ -768,6 +772,8 @@ public class EmbebedDocument : Document
 
     long length = -1;
 
+    EmbebedDocument preview = null;
+
     ParsedInfo info = null;
 
     BufferedStream stream;
@@ -778,8 +784,9 @@ public class EmbebedDocument : Document
 
     CollectionSplitter splitter;
 
-    public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter) : base(id, parser)
+    public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter, EmbebedDocument preview) : base(id, parser)
     {
+        this.preview = preview;
         this.splitter = splitter;
         path = id;
         Id = path + "\\" + index;
@@ -843,7 +850,7 @@ public class EmbebedDocument : Document
     }
     public override  IEnumerator<char> GetEnumerator()
     {
-        if(!enumeratorSended)
+        if(!enumeratorSended && (preview.EndReached || preview == null))
         {
             enumeratorSended = true;
             return new EmbebedDocumentEnumerator(this);

@@ -11,6 +11,49 @@ using System.Diagnostics;
 
 // }
 
+var temp = new CollectionSplitter(@"contents\Cran\cran.all.1400",new EndCranMatcherCreator(),Utils.Parser.CranParser);
+var list1 = new LinkedList<IDocument>();
+
+
+foreach(var doc in  temp)
+{
+    var temp2 = doc;
+    string temp3 = String.Concat(doc);
+    list1.AddLast(doc);
+}
+
+Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+var list2 = new LinkedList<IDocument>();
+foreach(var doc in  temp)
+{
+    var temp2 = doc;
+    // string temp3 = String.Concat(doc);
+    // System.Console.WriteLine(temp3);
+    list2.AddLast(doc);
+}
+
+var current1 = list1.First;
+var current2 = list2.First;
+int count = 0;
+System.Console.WriteLine(list1.Count);
+System.Console.WriteLine(list2.Count);
+while(current1 != null && current2 != null)
+{
+    if(current1.Value != current2.Value)
+    {
+        Console.WriteLine("distintos");
+        break;
+    }
+    count++;
+}
+
+System.Console.WriteLine(count);
+Console.WriteLine("termino");
+
 // public class Program
 // {
 //     public static void Print(IEnumerable<char> text)
@@ -210,31 +253,31 @@ using System.Diagnostics;
 
 // System.Console.ReadKey();
 
-var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
-var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
-
-LinkedList<IDocument> list = new LinkedList<IDocument>();
-foreach (var item in docs_file!.Values)
-{
-    list.AddLast(new CranJsonDocument(item.doc_id, item.title, item.text));
-}
-
-var model = new GVSMTermDoc(list);
-var qrels = new Dictionary<string, Dictionary<string, double>>();
-foreach (var query in queries_file!.Values)
-{
-    var query_dic = new Dictionary<string, double>();
-    var items = model.GetSearchItems(model.CreateQuery(query.text), 30);
-    foreach (var item in items)
-    {
-        query_dic.Add(item.URL, item.Score);
-    }
-    qrels.Add(query.query_id, query_dic);
-}
-
-var file = File.CreateText(@".\qrels_save");
-file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
-file.Close();
+//var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
+//var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
+//
+//LinkedList<IDocument> list = new LinkedList<IDocument>();
+//foreach (var item in docs_file!.Values)
+//{
+//    list.AddLast(new CranJsonDocument(item.doc_id, item.title, item.text));
+//}
+//
+//var model = new GVSMTermDoc(list);
+//var qrels = new Dictionary<string, Dictionary<string, double>>();
+//foreach (var query in queries_file!.Values)
+//{
+//    var query_dic = new Dictionary<string, double>();
+//    var items = model.GetSearchItems(model.CreateQuery(query.text), 30);
+//    foreach (var item in items)
+//    {
+//        query_dic.Add(item.URL, item.Score);
+//    }
+//    qrels.Add(query.query_id, query_dic);
+//}
+//
+//var file = File.CreateText(@".\qrels_save");
+//file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
+//file.Close();
 
 struct Doc
 {
