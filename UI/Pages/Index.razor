@@ -38,9 +38,13 @@
 }
 @if(!add_corpus_path && Load)
 {
-    <div class="spinner-border text-primary" role="status">
-      Loading <span class="visually-hidden">Loading...</span>
-    </div>
+ 
+
+<div class="align-items-center">
+  <h1 class="text-primary">Loading</h1>
+  <div class="spinner-border ms-auto text-primary" role="status" aria-hidden="true"></div>
+</div>
+    
 }
 @if(!add_corpus_path && !Load)
 {
@@ -78,20 +82,20 @@
         }
 
         <ul class="results">
+
             @foreach (var item in (result.Select((value, index) => (index, value)).TakeWhile(x => x.value.Score > 0)).Take(15))
             {
                 <li>
                     <div class="item">
+
                         <a class="title" href=@Concat(@item.index)  target="_blank">@item.value.Title</a>
                         <p>... @item.value.Snippet ...</p>
-                    </div>
+                </div>
                 </li>
             }
         </ul>
     }
 }
-
-
 
 @code {
     private string query = "";
@@ -101,7 +105,7 @@
     private ISearchResult ? result;
     private IEnumerable<string> ? directories;
     private bool add_corpus_path=true;
-
+ 
     private bool vectorial = true;
     private bool boolean;
     private bool generalized_vectorial;
@@ -117,7 +121,7 @@
     {
         return $"/Reader/Text/{id}";
     }
-    private void LoadCollections()
+    private async Task LoadCollections()
     {
         bool temp =true;
         for (int i = 0; i < corpus_path.Length; i++)
@@ -161,17 +165,23 @@
             }
         }
 
-        if(!temp)
+        add_corpus_path = temp;
+        Load = !temp;
+        await Task.Run(()=> load());
+
+    }
+
+    private async Task load()
+    {
+        if(!add_corpus_path)
         {
-            add_corpus_path = false;
-            Load = true;
-            vectorialModel = new VSMTermDoc(docs);
-            booleanModel = new BSMTermDoc(docs); 
-            @* generalizedModel = new GVSMTermDoc(docs);  *@
+
+            vectorialModel =  new VSMTermDoc(docs);
+            booleanModel =  new BSMTermDoc(docs); 
+            generalizedModel =  new GVSMTermDoc(docs); 
+            Load = false;
+
         }
-        Load = false;
-
-
     }
 
     /// <summary>
