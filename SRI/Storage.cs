@@ -338,10 +338,9 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
 
         if (Is_Add) return;
 
-        foreach (var item in corpus.Select((doc, index) => (index, doc)))
+        foreach (var item in corpus)
         {
-            this.Add(item.doc);
-            docs.Add(item.doc, item.index);
+            this.Add(item);
         }
         UpdateDocs();
     }
@@ -398,13 +397,17 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
     public override void UpdateAllWeight()
     {
         if (!needUpdate) return;
+        foreach (var item in MatrixStorage.Keys.Select((value, index) => (index, value)))
+        {
+            docs.Add(item.value, item.index);
+        }
 
         if (File.Exists(@".\DocSave\SaveManager"))
         {
             var readsavefile = File.OpenText(@".\DocSave\SaveManager");
-            var saves = JsonSerializer.Deserialize(readsavefile.ReadToEnd(), typeof(string[])) as IEnumerable<string>;
+            var saves = JsonSerializer.Deserialize<string[]>(readsavefile.ReadToEnd());
             readsavefile.Close();
-            if (!saves!.All(x => corpus.Select(x => x.Id).Contains(x)))
+            if (saves!.Length != corpus.Count() || !saves!.All(x => corpus.Select(x => x.Id).Contains(x)))
                 File.Delete(@".\DocSave\SaveManager");
         }
 
@@ -456,10 +459,10 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
                     save[(docindex - firstindex) * saveSize + minterm.Key] += minterm.Value;
                 }
             }
-            if ((docindex != 0 && (docindex + 1) % saveSize == 0) || (docindex + 1) == MatrixStorage.Count - 1)
+            if ((docindex != 0 && (docindex + 1) % saveSize == 0) || (docindex + 1) == MatrixStorage.Count)
             {
                 firstindex = docindex + 1;
-                int size = (firstindex / saveSize) - (firstindex == MatrixStorage.Count - 1 ? 0 : 1);
+                int size = (firstindex / saveSize) - (firstindex == MatrixStorage.Count ? 0 : 1);
                 using (var writer = new BinaryWriter(File.Open($@".\DocSave\save{size}", FileMode.Create)))
                 {
                     var bytes = MemoryMarshal.Cast<double, byte>(save.AsSpan());

@@ -3,6 +3,7 @@ using DP.Interface;
 using System.Text.Json;
 using SRI;
 using System.Diagnostics;
+using Utils;
 
 // namespace Test;
 // public static class TestingMethods
@@ -11,53 +12,53 @@ using System.Diagnostics;
 // }
 
 
-var directories = Utils.Utils.ReadAllFiles(@"contents\Reuters\");
+// var directories = Utils.Utils.ReadAllFiles(@"contents\Reuters\");
 
-IEnumerable<IDocument> temp = new CollectionSplitter(@"contents\Reuters\reut2-000.sgm",new EndReutersMatcherCreator(),Utils.Parser.ReutersParser);
-foreach(var doc_path in directories.Skip(1))
-{
-    temp = temp.Concat(new CollectionSplitter(doc_path,new EndReutersMatcherCreator(),Utils.Parser.ReutersParser));
-}
-var list1 = new LinkedList<IDocument>();
+// IEnumerable<IDocument> temp = new CollectionSplitter(@"contents\Reuters\reut2-000.sgm",new EndReutersMatcherCreator(),Utils.Parser.ReutersParser);
+// foreach(var doc_path in directories.Skip(1))
+// {
+//     temp = temp.Concat(new CollectionSplitter(doc_path,new EndReutersMatcherCreator(),Utils.Parser.ReutersParser));
+// }
+// var list1 = new LinkedList<IDocument>();
 
-foreach(var doc in  temp)
-{
-    var temp2 = doc;
-    var temp3 = new ProcesedDocument(doc).Length;
-    System.Console.WriteLine();
-    list1.AddLast(doc);
-}
-System.Console.WriteLine("End of Doc");
+// foreach(var doc in  temp)
+// {
+//     var temp2 = doc;
+//     var temp3 = new ProcesedDocument(doc).Length;
+//     System.Console.WriteLine();
+//     list1.AddLast(doc);
+// }
+// System.Console.WriteLine("End of Doc");
 
-Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-var list2 = new LinkedList<IDocument>();
-foreach(var doc in  temp)
-{
-    var temp2 = doc;
-    // string temp3 = String.Concat(doc);
-    list2.AddLast(doc);
-}
-System.Console.WriteLine("End of Doc");
+// Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+// var list2 = new LinkedList<IDocument>();
+// foreach(var doc in  temp)
+// {
+//     var temp2 = doc;
+//     // string temp3 = String.Concat(doc);
+//     list2.AddLast(doc);
+// }
+// System.Console.WriteLine("End of Doc");
 
-var current1 = list1.First;
-var current2 = list2.First;
-int count = 0;
-System.Console.WriteLine(list1.Count);
-System.Console.WriteLine(list2.Count);
-while(current1 != null && current2 != null)
-{
-    if(current1.Value != current2.Value)
-    {
-        Console.WriteLine("distintos");
-        break;
-    }
-    current1 = current1.Next;
-    current2 = current2.Next;
-    count++;
-}
+// var current1 = list1.First;
+// var current2 = list2.First;
+// int count = 0;
+// System.Console.WriteLine(list1.Count);
+// System.Console.WriteLine(list2.Count);
+// while(current1 != null && current2 != null)
+// {
+//     if(current1.Value != current2.Value)
+//     {
+//         Console.WriteLine("distintos");
+//         break;
+//     }
+//     current1 = current1.Next;
+//     current2 = current2.Next;
+//     count++;
+// }
 
-System.Console.WriteLine(count);
-Console.WriteLine("termino");
+// System.Console.WriteLine(count);
+// Console.WriteLine("termino");
 
 // public class Program
 // {
@@ -210,7 +211,8 @@ Console.WriteLine("termino");
 
 // IEnumerable<IDocument> docs = docs1.Concat(new CollectionSplitter(@"D:\Studio\SRI\3Models-SRI\contents\Cran\cran.all.1400", new EndCranMatcherCreator(), Parser.CranParser));
 
-// docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\Reuters");
+// IEnumerable<string> docsID = Utils.Utils.ReadAllFiles(@"D:\Studio\SRI\3Models-SRI\contents\Reuters");
+// IEnumerable<IDocument> docs = new LinkedList<IDocument>();
 
 // foreach (var item in docsID)
 // {
@@ -225,7 +227,7 @@ Console.WriteLine("termino");
 // cloc.Reset();
 
 // cloc.Start();
-// VSMDocTerm vectorial = new VSMDocTerm(docs);
+// GVSMDocTerm vectorial = new GVSMDocTerm(docs);
 // cloc.Stop();
 
 // Console.WriteLine($"construir el modelo cuesta: {cloc.Elapsed}");
@@ -258,31 +260,31 @@ Console.WriteLine("termino");
 
 // System.Console.ReadKey();
 
-//var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
-//var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
-//
-//LinkedList<IDocument> list = new LinkedList<IDocument>();
-//foreach (var item in docs_file!.Values)
-//{
-//    list.AddLast(new CranJsonDocument(item.doc_id, item.title, item.text));
-//}
-//
-//var model = new GVSMTermDoc(list);
-//var qrels = new Dictionary<string, Dictionary<string, double>>();
-//foreach (var query in queries_file!.Values)
-//{
-//    var query_dic = new Dictionary<string, double>();
-//    var items = model.GetSearchItems(model.CreateQuery(query.text), 30);
-//    foreach (var item in items)
-//    {
-//        query_dic.Add(item.URL, item.Score);
-//    }
-//    qrels.Add(query.query_id, query_dic);
-//}
-//
-//var file = File.CreateText(@".\qrels_save");
-//file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
-//file.Close();
+var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
+var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
+
+LinkedList<IDocument> list = new LinkedList<IDocument>();
+foreach (var item in docs_file!.Values)
+{
+   list.AddLast(new CranJsonDocument(item.doc_id, item.title, item.text));
+}
+
+var model = new GVSMDocTerm(list);
+var qrels = new Dictionary<string, Dictionary<string, double>>();
+foreach (var query in queries_file!.Values)
+{
+   var query_dic = new Dictionary<string, double>();
+   var items = model.GetSearchItems(model.CreateQuery(query.text), 30);
+   foreach (var item in items)
+   {
+       query_dic.Add(item.URL, item.Score);
+   }
+   qrels.Add(query.query_id, query_dic);
+}
+
+var file = File.CreateText(@".\qrels_save");
+file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
+file.Close();
 
 struct Doc
 {
