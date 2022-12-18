@@ -830,7 +830,6 @@ public class EmbebedDocument : Document
         }
         else
         {
-            localStream.Flush();
             localStream.UnderlyingStream.Position = prevPos;
         }
     }
