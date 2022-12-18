@@ -13,12 +13,9 @@ using System.Runtime.InteropServices;
 
 public abstract class Storage<T1, T2, V, D> : IStorage<T1, T2, V, D>, ICollection<D> where T1 : notnull where T2 : notnull
 {
-    protected LinkedList<int> blacklist;
-
     protected Storage(IEnumerable<D> corpus)
     {
         this.corpus = corpus;
-        blacklist = new LinkedList<int>();
     }
 
     protected abstract IDictionary<T1, IDictionary<T2, V>> MatrixStorage { get; set; }
@@ -38,7 +35,7 @@ public abstract class Storage<T1, T2, V, D> : IStorage<T1, T2, V, D>, ICollectio
     public virtual bool Contains(D item) => ((IEnumerable<D>)this).Contains(item);
     public virtual void CopyTo(D[] array, int arrayIndex) => this.ToList().CopyTo(array, arrayIndex);
 
-    public virtual IEnumerator<D> GetEnumerator() => new ExceptIndexEnumerable<D>(corpus, blacklist).GetEnumerator();
+    public virtual IEnumerator<D> GetEnumerator() => corpus.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 }
 
@@ -71,11 +68,7 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
 
         int ModalFrec;
         var terms = GenWeightTerms(item, out ModalFrec);
-        if (terms is null)
-        {
-            blacklist.AddLast(blacklist.Count + MatrixStorage.Keys.Count);
-            return;
-        }
+        if (terms is null) return;
 
         MatrixStorage.Add(item, terms);
         DocsFrecModal.Add(item, ModalFrec);
@@ -262,11 +255,7 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
         doc.UpdateDateTime();
         int ModalFrec = 0;
         ProcesedDocument termsresult = new ProcesedDocument(doc);
-        if (termsresult.Length == 0)
-        {
-            blacklist.AddLast(blacklist.Count + DocsFrecModal.Keys.Count);
-            return;
-        }
+        if (termsresult.Length == 0) return;
 
         foreach ((string, int) item in termsresult)
         {
@@ -375,7 +364,6 @@ public class GVSMStorageDT : VSMStorageDT, IStorage<IDocument, string, IWeight, 
 
         foreach (var doc in matrix)
         {
-            // Dictionary<int, double> docVector = new();
             foreach (var term in doc.Value)
             {
                 if (!trasp.ContainsKey(term.Key))
