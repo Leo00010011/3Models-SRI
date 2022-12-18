@@ -209,6 +209,44 @@ public static class Utils
     }
 }
 
+public class ExceptIndexEnumerable<T> : IEnumerable<T>
+{
+    int currentIndex = 0;
+
+    LinkedListNode<int> currentIndexToExcept;
+
+    IEnumerable<T> iter;
+
+    LinkedList<int> index;
+
+    public ExceptIndexEnumerable(IEnumerable<T> iter,LinkedList<int> index )
+    {
+        this.iter = iter;
+        this.index = index;
+        currentIndexToExcept = index.First;
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        foreach(var item in iter)
+        {
+            if(currentIndexToExcept != null && currentIndex == currentIndexToExcept.Value)
+            {
+                currentIndexToExcept = currentIndexToExcept.Next;
+            }
+            else
+            {
+                yield return item;
+            }
+            currentIndex++;
+        }
+        currentIndex = 0;
+        currentIndexToExcept = index.First;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
 public interface ICreator<out T>
 {
     T Create();

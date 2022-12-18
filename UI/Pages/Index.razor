@@ -141,7 +141,7 @@
 
     private VSMTermDoc vectorialModel ;
     private BSMTermDoc booleanModel;
-    private GVSMTermDoc generalizedModel;
+    private GVSMDocTerm generalizedModel;
 
     private IEnumerable<IDocument> docs = new LinkedList<IDocument>();
     private bool Load = false;
@@ -216,10 +216,10 @@
     {
         if(!add_corpus_path)
         {
-           
+@*            
             vectorialModel =  new VSMTermDoc(docs);
-            booleanModel =  new BSMTermDoc(docs); 
-            generalizedModel =  new GVSMTermDoc(docs); 
+            booleanModel =  new BSMTermDoc(docs);  *@
+            generalizedModel =  new GVSMDocTerm(docs); 
          
             Load = false;
 
@@ -282,7 +282,6 @@
         if(!string.IsNullOrEmpty(query) && directories!=null)
         {
            await Task.Run(()=> RunQ());
-          
         }
         qload = false;
 
