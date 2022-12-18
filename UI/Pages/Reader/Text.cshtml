@@ -1,7 +1,10 @@
 @page "{id:int}"
 
-<PageTitle>@UI.Date.results![int.Parse((string)@RouteData.Values["id"]!)].Title</PageTitle>
+<title>@UI.Date.results![int.Parse((string)@RouteData.Values["id"]!)].Title</title>
+<center>
+
 
 <h3>@UI.Date.results![int.Parse((string)@RouteData.Values["id"]!)].Title</h3>
+</center>
 
 <p>@UI.Date.results![int.Parse((string)@RouteData.Values["id"]!)].GetText()</p>
