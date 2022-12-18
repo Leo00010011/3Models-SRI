@@ -2,7 +2,6 @@
 using DP.Interface;
 using System.Text.Json;
 using SRI;
-using Utils;
 using System.Diagnostics;
 
 // namespace Test;
@@ -11,30 +10,34 @@ using System.Diagnostics;
 
 // }
 
-var temp = new CollectionSplitter(@"contents\Cran\cran.all.1400",new EndCranMatcherCreator(),Utils.Parser.CranParser);
-var list1 = new LinkedList<IDocument>();
 
+var directories = Utils.Utils.ReadAllFiles(@"contents\Reuters\");
+
+IEnumerable<IDocument> temp = new CollectionSplitter(@"contents\Reuters\reut2-000.sgm",new EndReutersMatcherCreator(),Utils.Parser.ReutersParser);
+foreach(var doc_path in directories.Skip(1))
+{
+    temp = temp.Concat(new CollectionSplitter(doc_path,new EndReutersMatcherCreator(),Utils.Parser.ReutersParser));
+}
+var list1 = new LinkedList<IDocument>();
 
 foreach(var doc in  temp)
 {
     var temp2 = doc;
-    string temp3 = String.Concat(doc);
+    var temp3 = new ProcesedDocument(doc).Length;
+    System.Console.WriteLine();
     list1.AddLast(doc);
 }
+System.Console.WriteLine("End of Doc");
 
-Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 var list2 = new LinkedList<IDocument>();
 foreach(var doc in  temp)
 {
     var temp2 = doc;
     // string temp3 = String.Concat(doc);
-    // System.Console.WriteLine(temp3);
     list2.AddLast(doc);
 }
+System.Console.WriteLine("End of Doc");
 
 var current1 = list1.First;
 var current2 = list2.First;
@@ -48,6 +51,8 @@ while(current1 != null && current2 != null)
         Console.WriteLine("distintos");
         break;
     }
+    current1 = current1.Next;
+    current2 = current2.Next;
     count++;
 }
 

@@ -434,9 +434,6 @@ public class Document : IDocument, IComparable
         this.parser = parser;
     }
 
-
-  
-
     public static IEnumerable<char> GetChars(StreamReader reader)
     {
         while (!reader.EndOfStream)
@@ -561,7 +558,7 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
             }
             else
             {
-                if(!current.Value.EndReached)
+                if(!(enumerable.parsedCompleted || current.Value.EndReached))
                     throw new Exception("Tienes que leer el documento anterior hasta el final");
                 //Solo se llega aquí si current.EndOfFileReached es true
                 enumerable.parsedCompleted = true;
@@ -776,6 +773,8 @@ public class EmbebedDocument : Document
 
     ParsedInfo info = null;
 
+    int index;
+
     BufferedStream stream;
 
     ICreator<ILazyMatcher> endMatcherCreator;
@@ -786,6 +785,7 @@ public class EmbebedDocument : Document
 
     public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter, EmbebedDocument preview) : base(id, parser)
     {
+        this.index = index;
         this.preview = preview;
         this.splitter = splitter;
         path = id;
@@ -850,12 +850,18 @@ public class EmbebedDocument : Document
     }
     public override  IEnumerator<char> GetEnumerator()
     {
-        if(!enumeratorSended && (preview.EndReached || preview == null))
+        if(!enumeratorSended && ( preview == null || preview.EndReached ))
         {
             enumeratorSended = true;
             return new EmbebedDocumentEnumerator(this);
         }
-        throw new InvalidOperationException("Solo se puede pedir un enumerator");
+        else
+        {
+            if(enumeratorSended)
+                throw new InvalidOperationException("Solo se puede pedir un enumerator");
+            else
+                throw new InvalidOperationException("Hay que leer el documento anterior(" + preview.index + ") hasta el final para poder leer este");
+        }
     }
  
 }
@@ -917,8 +923,6 @@ public class ProcesedDocument : IResult<IEnumerable<char>, string, int>
         return getFrecs().Select(x => (x.Key, x.Value)).GetEnumerator();
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return getFrecs().Select(x => (x.Key, x.Value)).GetEnumerator();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+    
 }

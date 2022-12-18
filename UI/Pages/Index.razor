@@ -129,7 +129,17 @@
             if(selected_corpus_path[i])
             {
                 temp = false;
-                string prefix = Path.GetFullPath(@".\contents");
+                string cwd = Directory.GetCurrentDirectory();
+                string prefix;
+                if(cwd.Substring(cwd.Length - 2) == "UI")
+                {
+                    Directory.SetCurrentDirectory(@"..");
+                }
+                else
+                {
+                    Directory.SetCurrentDirectory(@".");
+                }
+                prefix = Path.GetFullPath(@".\contents");
                 string temp_path = prefix+corpus_path[i];
                 directories = Utils.ReadAllFiles(temp_path);
                 switch (i)

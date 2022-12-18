@@ -252,6 +252,7 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
 
     protected virtual void GenWeightTerms(IDocument doc, in int numdoc)
     {
+        doc.UpdateDateTime();
         int ModalFrec = 0;
         ProcesedDocument termsresult = new ProcesedDocument(doc);
         if (termsresult.Length == 0) return;
@@ -271,7 +272,6 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
         }
 
         DocsFrecModal.Add(doc, (numdoc, ModalFrec));
-        doc.UpdateDateTime();
     }
 
     public virtual void UpdateAllWeight()
@@ -291,8 +291,10 @@ public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, ISto
         foreach (var item in corpus.Select((doc, i) => (doc, i)))
         {
             
-            var value = DocsFrecModal[item.doc];
-            DocsFrecModal[item.doc] = (value.Item1, Math.Sqrt(norma2[value.Item1]));
+            //var value = DocsFrecModal[item.doc];
+            (int,double) value;
+            if(DocsFrecModal.TryGetValue(item.doc,out value))
+                DocsFrecModal[item.doc] = (value.Item1, Math.Sqrt(norma2[value.Item1]));
         }
         needUpdate = false;
     }
