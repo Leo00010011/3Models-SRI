@@ -1,9 +1,6 @@
 ﻿using DP;
 using DP.Interface;
-using System.Text.Json;
-using SRI;
-using System.Diagnostics;
-using Utils;
+using System.Text.RegularExpressions;
 
 // namespace Test;
 // public static class TestingMethods
@@ -260,31 +257,65 @@ using Utils;
 
 // System.Console.ReadKey();
 
-var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
-var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
+//var docs_file = JsonSerializer.Deserialize(File.ReadAllText(@".\docs_save"), typeof(Dictionary<string, Doc>)) as Dictionary<string, Doc>;
+//var queries_file = JsonSerializer.Deserialize(File.ReadAllText(@".\queries_save"), typeof(Dictionary<string, Query>)) as Dictionary<string, Query>;
+//
+//LinkedList<IDocument> list = new LinkedList<IDocument>();
+//foreach (var item in docs_file!.Values)
+//{
+//   list.AddLast(new CranJsonDocument(item.doc_id, item.title, item.text));
+//}
+//
+//var model = new GVSMDocTerm(list);
+//var qrels = new Dictionary<string, Dictionary<string, double>>();
+//foreach (var query in queries_file!.Values)
+//{
+//   var query_dic = new Dictionary<string, double>();
+//   var items = model.GetSearchItems(model.CreateQuery(query.text), 30);
+//   foreach (var item in items)
+//   {
+//       query_dic.Add(item.URL, item.Score);
+//   }
+//   qrels.Add(query.query_id, query_dic);
+//}
+//
+//var file = File.CreateText(@".\qrels_save");
+//file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
+//file.Close();
 
-LinkedList<IDocument> list = new LinkedList<IDocument>();
-foreach (var item in docs_file!.Values)
+
+
+string cranPath = @"C:\Users\Leo pc\Desktop\SRI\Pf\3Models-SRI\contents\Cran\cran.all.1400";
+string reutersPath = @"C:\Users\Leo pc\Desktop\SRI\Pf\3Models-SRI\contents\Reuters\reut2-000.sgm";
+var cran = new CollectionSplitter(cranPath,new EndCranMatcherCreator(), Utils.Parser.CranParser,DP.DPUtils.GetTextCran);
+var reuters = new CollectionSplitter(reutersPath,new EndReutersMatcherCreator(), Utils.Parser.ReutersParser,DP.DPUtils.GetTextReuters);
+IEnumerable<IDocument> docs = cran;
+List<IDocument> temp = new List<IDocument>();
+foreach(var doc in docs)
 {
-   list.AddLast(new CranJsonDocument(item.doc_id, item.title, item.text));
+  String.Concat(doc);
+  temp.Add(doc);
 }
+System.Console.WriteLine("Ready");
 
-var model = new GVSMDocTerm(list);
-var qrels = new Dictionary<string, Dictionary<string, double>>();
-foreach (var query in queries_file!.Values)
+
+
+while(true)
 {
-   var query_dic = new Dictionary<string, double>();
-   var items = model.GetSearchItems(model.CreateQuery(query.text), 30);
-   foreach (var item in items)
-   {
-       query_dic.Add(item.URL, item.Score);
-   }
-   qrels.Add(query.query_id, query_dic);
+    int index = int.Parse(Console.ReadLine());
+    if(index == -1)
+    {
+        break;
+    }
+    Console.WriteLine(temp[index].GetDocText());
 }
-
-var file = File.CreateText(@".\qrels_save");
-file.WriteLine(JsonSerializer.Serialize(qrels, typeof(Dictionary<string, Dictionary<string, double>>)));
-file.Close();
+// while(true)
+// {
+//     string toMatch = Console.ReadLine();
+//     string re = Console.ReadLine();
+//     Regex rere = new Regex(re);
+//     System.Console.WriteLine(rere.Match(toMatch).Value);
+// }
 
 struct Doc
 {

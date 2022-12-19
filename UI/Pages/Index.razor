@@ -182,7 +182,7 @@
                         LinkedList<IDocument> d = new LinkedList<IDocument>();
                         foreach (var item in directories)
                         {
-                            d.AddLast(new DP.Document(item, Parser.NewsgroupParser));
+                            d.AddLast(new DP.Document(item, Parser.NewsgroupParser,DP.DPUtils.GetTextDummy));
                         }
                         docs = d;
                         break;
@@ -191,7 +191,7 @@
                     {
                         foreach (var item in directories)
                         {
-                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndReutersMatcherCreator(), Parser.ReutersParser));
+                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndReutersMatcherCreator(), Parser.ReutersParser,DP.DPUtils.GetTextReuters));
                         }
                         break;
                     }
@@ -199,7 +199,7 @@
                     {
                         foreach (var item in directories)
                         {
-                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndCranMatcherCreator(), Parser.CranParser));
+                            docs = docs.Concat(new DP.CollectionSplitter(item, new DP.EndCranMatcherCreator(), Parser.CranParser,DP.DPUtils.GetTextCran));
                         }
                         break;
                     }
