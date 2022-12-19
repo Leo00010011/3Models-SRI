@@ -1,6 +1,7 @@
 using DP.Interface;
 using Utils;
 using System.Collections;
+using System.Text.RegularExpressions;
 namespace DP;
 
 #nullable disable
@@ -11,6 +12,31 @@ public enum stateDoc
     deleted,
     notchanged
 }
+
+
+public static class DPUtils
+{
+    public static string GetTextReuters(string text)
+    {
+        Regex start = new Regex(@"(<BODY>){1}");
+        Regex end = new Regex(@"(</BODY>){1}");
+        Match startMatch = start.Match(text);
+        Match endMatch = end.Match(text);
+        int startIndex = startMatch.Index + "<BODY>".Length;
+        return text.Substring(startIndex, endMatch.Index - startIndex);
+    }
+
+    public static string GetTextDummy(string text)
+    {
+        return text;
+    }
+
+    public static string GetTextCran(string text)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 
 public class LazyKMP : ILazyMatcher
 {
@@ -424,15 +450,17 @@ public class Document : IDocument, IComparable
     private DateTime modifiedDateTime;
     private Func<IEnumerable<char>, ParsedInfo> parser;
 
+    protected Func<string,string> getTextMethod;
     
 
-    public Document(string id, Func<IEnumerable<char>, ParsedInfo> parser)
+    public Document(string id, Func<IEnumerable<char>, ParsedInfo> parser, Func<string,string> getTextMethod)
     {
         Id = id;
         path = id;
         modifiedDateTime = default(DateTime);
         this.parser = parser;
-    }
+        this.getTextMethod = getTextMethod;
+    }  
 
     public static IEnumerable<char> GetChars(StreamReader reader)
     {
@@ -490,7 +518,8 @@ public class Document : IDocument, IComparable
         {
             result = sr.ReadToEnd();
         }
-        return result;
+        
+        return getTextMethod(result);
     }
 }
 
@@ -550,7 +579,7 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
                     EmbebedDocument preview = null;
                     if(current != null)
                         preview = current.Value;
-                    current = new LinkedListNode<EmbebedDocument>(new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable,preview));
+                    current = new LinkedListNode<EmbebedDocument>(new EmbebedDocument(enumerable.collectionPath,index,enumerable.stream,enumerable.parser,enumerable.endMatcherCreator,enumerable,preview,enumerable.getTextMethod));
                     enumerable.createdDoc.AddLast(current);
                 }
                 index++;
@@ -593,11 +622,14 @@ public class CollectionSplitter : IEnumerable<IDocument>, IDisposable
     LinkedList<EmbebedDocument> createdDoc = new LinkedList<EmbebedDocument>();
 
     BufferedStream stream;
-    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> endMatcherCreator, Func<IEnumerable<char>, ParsedInfo> parser)
+
+    Func<string,string> getTextMethod;
+    public CollectionSplitter(string collectionPath, ICreator<ILazyMatcher> endMatcherCreator, Func<IEnumerable<char>, ParsedInfo> parser, Func<string,string> getTextMethod)
     {
         this.collectionPath = collectionPath;
         this.endMatcherCreator = endMatcherCreator;
         this.parser = parser;
+        this.getTextMethod = getTextMethod;
         stream = new BufferedStream(File.Open(collectionPath,FileMode.Open));
     }
 
@@ -783,7 +815,7 @@ public class EmbebedDocument : Document
 
     CollectionSplitter splitter;
 
-    public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter, EmbebedDocument preview) : base(id, parser)
+    public EmbebedDocument(string id,int index,BufferedStream stream, Func<IEnumerable<char>, ParsedInfo> parser, ICreator<ILazyMatcher> endMatcher, CollectionSplitter splitter, EmbebedDocument preview, Func<string,string> getTextMethod) : base(id, parser,getTextMethod)
     {
         this.index = index;
         this.preview = preview;
@@ -844,7 +876,7 @@ public class EmbebedDocument : Document
         localStream.Read(arr,0,(int)length);
         result = String.Concat(arr.Select((c,index) => (char)c));
         DevolverStream(localStream,openedHere,prevPos);
-        return result;
+        return getTextMethod(result);
 
     }
     public override  IEnumerator<char> GetEnumerator()

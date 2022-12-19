@@ -159,6 +159,8 @@ public static class Utils
         return stopWords;
     }
 
+    
+
     public static IEnumerable<string> GetTerms(IEnumerable<char> text)
     {
         LinkedList<char>? currentTerm = null;
