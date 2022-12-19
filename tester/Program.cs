@@ -289,7 +289,7 @@ string cranPath = @"C:\Users\Leo pc\Desktop\SRI\Pf\3Models-SRI\contents\Cran\cra
 string reutersPath = @"C:\Users\Leo pc\Desktop\SRI\Pf\3Models-SRI\contents\Reuters\reut2-000.sgm";
 var cran = new CollectionSplitter(cranPath,new EndCranMatcherCreator(), Utils.Parser.CranParser,DP.DPUtils.GetTextCran);
 var reuters = new CollectionSplitter(reutersPath,new EndReutersMatcherCreator(), Utils.Parser.ReutersParser,DP.DPUtils.GetTextReuters);
-IEnumerable<IDocument> docs = reuters;
+IEnumerable<IDocument> docs = cran;
 List<IDocument> temp = new List<IDocument>();
 foreach(var doc in docs)
 {

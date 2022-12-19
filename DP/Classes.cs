@@ -33,7 +33,12 @@ public static class DPUtils
 
     public static string GetTextCran(string text)
     {
-        throw new NotImplementedException();
+        Regex start = new Regex(@"(\n.W\n){1}");
+        Match startMatch = start.Match(text);
+        Regex end = new Regex(@"\n.I\s[0-9]+\n");
+        Match endMatch = end.Match(text);
+        int startIndex = startMatch.Index + 3;
+        return text.Substring(startIndex,endMatch.Index - startIndex);
     }
 }
 
