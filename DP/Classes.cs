@@ -22,8 +22,12 @@ public static class DPUtils
         Regex end = new Regex(@"(</BODY>){1}");
         Match startMatch = start.Match(text);
         Match endMatch = end.Match(text);
-        int startIndex = startMatch.Index + "<BODY>".Length;
-        return text.Substring(startIndex, endMatch.Index - startIndex);
+        int startIndex = startMatch.Index + Math.Min("<BODY>".Length, text.Length - startMatch.Index);
+        if(startIndex >= endMatch.Index)
+        {
+            return "EMPTY DOC";
+        }
+        return text.Substring(startIndex, endMatch.Index - startIndex + 1);
     }
 
     public static string GetTextDummy(string text)
@@ -37,8 +41,9 @@ public static class DPUtils
         Match startMatch = start.Match(text);
         Regex end = new Regex(@"\n.I\s[0-9]+\n");
         Match endMatch = end.Match(text);
-        int startIndex = startMatch.Index + 3;
-        return text.Substring(startIndex,endMatch.Index - startIndex);
+        int startIndex = Math.Min(3, text.Length - startMatch.Index);
+        int endIndex = (endMatch.Index != 0)? endMatch.Index: (text.Length - 1);
+        return text.Substring(startIndex,endIndex - startIndex + 1);
     }
 }
 
