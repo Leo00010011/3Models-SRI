@@ -99,7 +99,7 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
 
     public override void UpdateDocs()
     {
-        foreach (var item in corpus)
+        foreach (var item in MatrixStorage.Keys)
         {
             switch (item.GetState())
             {
@@ -175,6 +175,8 @@ public class VSMStorageDT : Storage<IDocument, string, IWeight, IDocument>, ISto
     }
 
     public virtual bool ContainsKey(string key) => InvFrecTerms.ContainsKey(key);
+
+    public override IEnumerator<IDocument> GetEnumerator() => MatrixStorage.Keys.GetEnumerator();
 }
 
 public class VSMStorageTD : Storage<string, IDocument, IWeight, IDocument>, IStorage<string, IDocument, IWeight, IDocument>, ICollection<IDocument>
